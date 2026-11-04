@@ -1,5 +1,7 @@
 import Stripe from 'stripe';
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: '2025-02-24.acacia' as any,
+// Dodat rezervni string ('dummy_key') sprečava krah build-a ako Vercel još nema env varijablu
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'dummy_key_for_build', {
+  apiVersion: '2023-10-16' as any,
+  typescript: true,
 });
