@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-
+import { supabase } from '@/lib/supabase';
 // --- TYPINGS ---
 interface Service {
   title: string;
@@ -36,13 +35,35 @@ export default function DiVPlatform() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSite, setGeneratedSite] = useState<GeneratedSite | null>(null);
 
-  // User Dashboard State
-  const [trialDaysLeft, setTrialDaysLeft] = useState(30);
-  const [leads, setLeads] = useState<Lead[]>([
-    { id: 1, client: 'Ana Jovanović', phone: '063/123-456', service: 'Žensko šišanje i feniranje', date: 'Danas, 14:00', status: 'Novo' },
-    { id: 2, client: 'Marko Petrović', phone: '064/987-654', service: 'Muško šišanje', date: 'Juče, 10:30', status: 'Kontaktirano' },
-    { id: 3, client: 'Jovana Ilić', phone: '065/555-444', service: 'Svečana frizura', date: '02. Nov 2026.', status: 'Završeno' },
-  ]);
+  // User Dashboard State sa Supabase povezivanjem
+  const [trialDaysLeft] = useState(30);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loadingLeads, setLoadingLeads] = useState(true);
+
+  useEffect(() => {
+    async function fetchLeads() {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (data && !error) {
+        // Mapiramo podatke iz baze u format koji tabela očekuje
+        const formattedLeads = data.map((item: any) => ({
+          id: item.id,
+          client: item.client_name,
+          phone: item.phone,
+          service: item.service,
+          date: new Date(item.created_at).toLocaleDateString('sr-RS'),
+          status: item.status
+        }));
+        setLeads(formattedLeads);
+      }
+      setLoadingLeads(false);
+    }
+
+    fetchLeads();
+  }, []);
 
   // Handle AI Site Generation Simulation
   const handleGenerate = (e: React.FormEvent) => {
