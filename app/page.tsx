@@ -32,15 +32,15 @@ export default function DiVPlatform() {
   const [activeTab, setActiveTab] = useState<'landing' | 'generator' | 'userDashboard' | 'superAdmin'>('landing');
 
   // Generator State
-  const [bizName, setBizName] = useState('');
-  const [bizPrompt, setBizPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [bizName, setBizName] = useState<string>('');
+  const [bizPrompt, setBizPrompt] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generatedSite, setGeneratedSite] = useState<GeneratedSite | null>(null);
 
   // User Dashboard State sa Supabase povezivanjem
-  const [trialDaysLeft] = useState(30);
+  const [trialDaysLeft] = useState<number>(30);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [loadingLeads, setLoadingLeads] = useState(true);
+  const [loadingLeads, setLoadingLeads] = useState<boolean>(true);
 
   // Stripe Checkout Handler
   const handleSubscribe = async () => {
@@ -248,7 +248,7 @@ export default function DiVPlatform() {
                   <input
                     type="text"
                     value={bizName}
-                    onChange={(e) => setBizName(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBizName(e.target.value)}
                     placeholder="npr. Frizerski Salon Bella"
                     className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 transition-all"
                     required
@@ -260,7 +260,7 @@ export default function DiVPlatform() {
                   <textarea
                     rows={5}
                     value={bizPrompt}
-                    onChange={(e) => setBizPrompt(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBizPrompt(e.target.value)}
                     placeholder="npr. Nudimo šišanje, feniranje i svečane frizure. Nalazimo se u centru grada, radimo svakog dana od 09h do 20h."
                     className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 transition-all"
                     required
@@ -332,7 +332,7 @@ export default function DiVPlatform() {
                 <div className="p-8">
                   <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-4 text-center">Izdvojene Usluge</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {generatedSite.services.map((srv, idx) => (
+                    {generatedSite.services.map((srv: Service, idx: number) => (
                       <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
                         <h5 className="font-bold text-sm text-slate-900 mb-1">{srv.title}</h5>
                         <p className="text-xs text-slate-500 leading-relaxed">{srv.desc}</p>
@@ -436,7 +436,7 @@ export default function DiVPlatform() {
                       <td colSpan={5} className="p-4 text-center text-slate-500">Nema pristiglih upita.</td>
                     </tr>
                   ) : (
-                    leads.map((lead) => (
+                    leads.map((lead: Lead) => (
                       <tr key={lead.id} className="hover:bg-slate-800/20 transition-all">
                         <td className="p-4 font-bold text-white">{lead.client}</td>
                         <td className="p-4 text-slate-300">{lead.phone}</td>
