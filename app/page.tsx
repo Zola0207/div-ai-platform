@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { NextResponse } from 'next/server';
-import { stripe } from '../../../lib/stripe';
+import { supabase } from '../lib/supabase';
+import { stripe } from '../lib/stripe';
 // --- TYPINGS ---
 interface Service {
   title: string;
