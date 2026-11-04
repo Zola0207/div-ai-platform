@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { stripe } from '../lib/stripe'; // Korišćenje relativne putanje umesto @/ da Vercel/Turbopack ne bi lomio build
+import { stripe } from '../../lib/stripe'; // Korišćenje relativne putanje umesto @/ da Vercel/Turbopack ne bi lomio build
 
 export async function POST(req: Request) {
   try {
