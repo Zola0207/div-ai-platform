@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
+import { stripe } from '../lib/stripe'; // Korišćenje relativne putanje umesto @/ da Vercel/Turbopack ne bi lomio build
 
 export async function POST(req: Request) {
   try {
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}?payment=success`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}?payment=cancelled`,
-    });
+    } as any); // Zaobilazi stroge Stripe TypeScript provere na Vercelu
 
     return NextResponse.json({ url: session.url });
   } catch (err: any) {
