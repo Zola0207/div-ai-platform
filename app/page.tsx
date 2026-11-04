@@ -1,6 +1,8 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+
 // --- TYPINGS ---
 interface Service {
   title: string;
@@ -17,7 +19,7 @@ interface GeneratedSite {
 }
 
 interface Lead {
-  id: number;
+  id: number | string;
   client: string;
   phone: string;
   service: string;
@@ -40,26 +42,50 @@ export default function DiVPlatform() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
 
+  // Stripe Checkout Handler
+  const handleSubscribe = async () => {
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId: 'bella-demo', email: 'korisnik@example.com' }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Došlo je do greške prilikom kreiranja sesije za naplatu.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Greška pri konekciji sa Stripe serverom.');
+    }
+  };
+
   useEffect(() => {
     async function fetchLeads() {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from('leads')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (data && !error) {
-        // Mapiramo podatke iz baze u format koji tabela očekuje
-        const formattedLeads = data.map((item: any) => ({
-          id: item.id,
-          client: item.client_name,
-          phone: item.phone,
-          service: item.service,
-          date: new Date(item.created_at).toLocaleDateString('sr-RS'),
-          status: item.status
-        }));
-        setLeads(formattedLeads);
+        if (data && !error) {
+          const formattedLeads = data.map((item: any) => ({
+            id: item.id,
+            client: item.client_name,
+            phone: item.phone,
+            service: item.service,
+            date: new Date(item.created_at).toLocaleDateString('sr-RS'),
+            status: item.status,
+          }));
+          setLeads(formattedLeads);
+        }
+      } catch (err) {
+        console.error('Greška pri učitavanju upita:', err);
+      } finally {
+        setLoadingLeads(false);
       }
-      setLoadingLeads(false);
     }
 
     fetchLeads();
@@ -77,12 +103,12 @@ export default function DiVPlatform() {
         tagline: `Vrhunska usluga i kvalitet na jednom mestu.`,
         about: `Dobrodošli u ${bizName}. Posvećeni smo pružanju najboljih usluga za naše klijente uz dugogodišnje iskustvo i stručni tim.`,
         services: [
-          { title: 'Standardna Usluga', desc: 'Profionalna i brza realizacija prilagođena vašim potrebama.' },
+          { title: 'Standardna Usluga', desc: 'Profesionalna i brza realizacija prilagođena vašim potrebama.' },
           { title: 'Premium Paket', desc: 'Kompletna usluga sa garantovanim kvalitetom i podrškom.' },
-          { title: 'Konsultacije', desc: 'Besplatni saveti i procena potreba za svakog novog klijenta.' }
+          { title: 'Konsultacije', desc: 'Besplatni saveti i procena potreba za svakog novog klijenta.' },
         ],
         contact: 'Kontaktirajte nas već danas i zakažite vaš termin!',
-        primaryColor: '#6366f1'
+        primaryColor: '#6366f1',
       });
       setIsGenerating(false);
     }, 2000);
@@ -139,11 +165,10 @@ export default function DiVPlatform() {
       </header>
 
       {/* ========================================================================= */}
-      {/* 1. LANDING PAGE VIEW                                                       */}
+      {/* 1. LANDING PAGE VIEW                                                      */}
       {/* ========================================================================= */}
       {activeTab === 'landing' && (
         <div className="relative overflow-hidden">
-          {/* Background Glows */}
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/20 rounded-full blur-[140px] pointer-events-none"></div>
           <div className="absolute top-1/3 left-1/3 w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none"></div>
 
@@ -161,7 +186,7 @@ export default function DiVPlatform() {
             </h1>
 
             <p className="max-w-2xl mx-auto text-slate-400 text-lg md:text-xl mb-12 font-normal leading-relaxed">
-              DiV.ai je namenjen malim preduzećima. Opši čime se baviš, a naš AI sistem kreira profesionalni sajt, hosting i sistem za rezervacije u trenutku.
+              DiV.ai je namenjen malim preduzećima. Opiši čime se baviš, a naš AI sistem kreira profesionalni sajt, hosting i sistem za rezervacije u trenutku.
             </p>
 
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-16">
@@ -204,7 +229,7 @@ export default function DiVPlatform() {
       )}
 
       {/* ========================================================================= */}
-      {/* 2. AI GENERATOR PAGE VIEW                                                  */}
+      {/* 2. AI GENERATOR PAGE VIEW                                                 */}
       {/* ========================================================================= */}
       {activeTab === 'generator' && (
         <div className="min-h-[calc(100vh-73px)] flex flex-col lg:flex-row">
@@ -214,7 +239,7 @@ export default function DiVPlatform() {
               <span className="text-indigo-400 text-xs font-bold uppercase tracking-wider bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
                 Korak 1 od 2
               </span>
-              <h2 className="text-3xl font-black text-white mt-4 mb-2">Opši svoj biznis</h2>
+              <h2 className="text-3xl font-black text-white mt-4 mb-2">Opiši svoj biznis</h2>
               <p className="text-slate-400 text-sm mb-8 leading-relaxed">Unesi osnovne informacije. Naš DiV AI model priprema sajt i aktivira tvoj besplatni probni period od 30 dana.</p>
 
               <form onSubmit={handleGenerate} className="space-y-6">
@@ -330,7 +355,7 @@ export default function DiVPlatform() {
       )}
 
       {/* ========================================================================= */}
-      {/* 3. USER DASHBOARD VIEW                                                     */}
+      {/* 3. USER DASHBOARD VIEW                                                    */}
       {/* ========================================================================= */}
       {activeTab === 'userDashboard' && (
         <div className="max-w-7xl mx-auto p-6 md:p-10 space-y-8">
@@ -358,8 +383,11 @@ export default function DiVPlatform() {
                 Iskoristite probni period da testirate sve funkcije. Nakon isteka, cena mesečnog održavanja i hostinga iznosi samo 19€/mesečno.
               </p>
             </div>
-            <button className="bg-white hover:bg-slate-100 text-slate-950 font-black text-xs px-6 py-3.5 rounded-2xl shadow-xl transition-all whitespace-nowrap">
-              Aktiviraj Pretpalatu 💳
+            <button 
+              onClick={handleSubscribe}
+              className="bg-white hover:bg-slate-100 text-slate-950 font-black text-xs px-6 py-3.5 rounded-2xl shadow-xl transition-all whitespace-nowrap"
+            >
+              Aktiviraj Pretplatu 💳
             </button>
           </div>
 
@@ -386,7 +414,7 @@ export default function DiVPlatform() {
 
           {/* Leads Table */}
           <div className="bg-slate-900/40 border border-slate-800/80 p-6 rounded-3xl backdrop-blur-xl">
-            <h3 className="text-lg font-bold text-white mb-6">Prispeli Upiti i Rezervacije</h3>
+            <h3 className="text-lg font-bold text-white mb-6">Prispeli Upiti i Rezervacije (Iz Supabase Baze)</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-950/80 text-slate-400 uppercase">
@@ -399,23 +427,33 @@ export default function DiVPlatform() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
-                  {leads.map((lead) => (
-                    <tr key={lead.id} className="hover:bg-slate-800/20 transition-all">
-                      <td className="p-4 font-bold text-white">{lead.client}</td>
-                      <td className="p-4 text-slate-300">{lead.phone}</td>
-                      <td className="p-4 text-slate-300">{lead.service}</td>
-                      <td className="p-4 text-slate-500">{lead.date}</td>
-                      <td className="p-4">
-                        <span className={`px-3 py-1 rounded-full font-bold text-[10px] ${
-                          lead.status === 'Novo' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' :
-                          lead.status === 'Kontaktirano' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                          'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        }`}>
-                          {lead.status}
-                        </span>
-                      </td>
+                  {loadingLeads ? (
+                    <tr>
+                      <td colSpan={5} className="p-4 text-center text-slate-500">Učitavanje podataka iz baze...</td>
                     </tr>
-                  ))}
+                  ) : leads.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-4 text-center text-slate-500">Nema pristiglih upita.</td>
+                    </tr>
+                  ) : (
+                    leads.map((lead) => (
+                      <tr key={lead.id} className="hover:bg-slate-800/20 transition-all">
+                        <td className="p-4 font-bold text-white">{lead.client}</td>
+                        <td className="p-4 text-slate-300">{lead.phone}</td>
+                        <td className="p-4 text-slate-300">{lead.service}</td>
+                        <td className="p-4 text-slate-500">{lead.date}</td>
+                        <td className="p-4">
+                          <span className={`px-3 py-1 rounded-full font-bold text-[10px] ${
+                            lead.status === 'Novo' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' :
+                            lead.status === 'Kontaktirano' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                            'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          }`}>
+                            {lead.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -424,7 +462,7 @@ export default function DiVPlatform() {
       )}
 
       {/* ========================================================================= */}
-      {/* 4. SUPER ADMIN VIEW                                                        */}
+      {/* 4. SUPER ADMIN VIEW                                                       */}
       {/* ========================================================================= */}
       {activeTab === 'superAdmin' && (
         <div className="max-w-7xl mx-auto p-6 md:p-10 space-y-8">
