@@ -2,18 +2,11 @@
 
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense } from 'react';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (sessionId) {
-      setLoading(false);
-    }
-  }, [sessionId]);
 
   return (
     <div className="max-w-md w-full bg-gray-800 p-8 rounded-2xl shadow-xl text-center border border-gray-700">
