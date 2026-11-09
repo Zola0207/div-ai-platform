@@ -24,7 +24,7 @@ export type AiInput = {
   bookingType: string;
 };
 
-const DEFAULT_MODEL = 'gemini-2.5-flash-lite';
+const DEFAULT_MODEL = 'gemini-flash-lite-latest';
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export function isAiConfigured(): boolean {
@@ -148,6 +148,8 @@ function buildPrompt(input: AiInput): string {
     '',
     'Pravila:',
     '- ton: profesionalan i topao, bez preteranih obećanja i bez izmišljenih nagrada',
+    '- obavezno koristi srpska slova: č, ć, ž, š, đ (ne pisati "ciscenje" nego "čišćenje")',
+    '- obraćaj se čitaocima sa "Vi" (persiranje), dosledno kroz ceo tekst',
     '- tagline: najviše 60 znakova',
     '- description: 2-3 rečenice, najviše 300 znakova',
     '- services: tačno 3 usluge koje su realne za tu delatnost, cena u formatu "od 1.500 RSD" ili "po dogovoru"',
@@ -172,7 +174,7 @@ export async function generateSiteContent(input: AiInput): Promise<AiSiteContent
     body: JSON.stringify({
       contents: [{ parts: [{ text: buildPrompt(input) }] }],
       generationConfig: {
-        temperature: 0.8,
+        temperature: 0.7,
         maxOutputTokens: 1024,
         responseMimeType: 'application/json',
         responseSchema: RESPONSE_SCHEMA,
@@ -186,7 +188,7 @@ export async function generateSiteContent(input: AiInput): Promise<AiSiteContent
       throw new Error('AI kvota je trenutno potrošena. Pokušajte ponovo za nekoliko minuta.');
     }
     if (response.status === 404) {
-      throw new Error(`Model "${model}" nije dostupan. Postavite GEMINI_MODEL na ispravan naziv.`);
+      throw new Error(`Model "${model}" nije dostupan za ovaj ključ. Postavite GEMINI_MODEL=gemini-flash-lite-latest.`);
     }
     throw new Error(`AI servis je vratio grešku ${response.status}.${detail ? '' : ''}`);
   }
