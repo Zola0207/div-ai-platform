@@ -35,6 +35,19 @@ create table if not exists public.sites (
 create index if not exists sites_owner_id_idx on public.sites (owner_id);
 create index if not exists sites_updated_at_idx on public.sites (updated_at desc);
 
+-- Javna adresa sajta (/s/slug) mora biti jedinstvena na celoj platformi.
+-- Prvo razrešimo eventualne duplikate iz ranijih verzija, pa dodamo indeks.
+with ranked as (
+  select id, slug, row_number() over (partition by slug order by created_at) as rn
+  from public.sites
+)
+update public.sites s
+set slug = s.slug || '-' || r.rn
+from ranked r
+where s.id = r.id and r.rn > 1;
+
+create unique index if not exists sites_slug_key on public.sites (slug);
+
 -- 3. Upiti — dodajemo vezu sa sajtom (stare baze je nemaju)
 create table if not exists public.leads (
   id uuid primary key default gen_random_uuid(),

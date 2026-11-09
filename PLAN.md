@@ -140,6 +140,7 @@ Naslovna · O nama · Usluge i cene · Galerija · Cenovnik · Radno vreme · Za
 - ✅ Ograničenje broja sajtova po planu (trigger u bazi + provera u klijentu)
 - ✅ Stripe checkout po planu (19 / 49 / 149 € + 999 € jednokratno)
 - ✅ Billing portal i webhook koji ažurira plan i status
+- ✅ Objava sajta na javnu adresu `/s/<slug>` (bez prijave, sa SEO meta i JSON-LD)
 - ⬜ Live test plaćanja (čeka prave Stripe ključeve i `STRIPE_WEBHOOK_SECRET`)
 
 ### Faza 4 — Mobilna aplikacija (premium)

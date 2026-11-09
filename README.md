@@ -60,12 +60,19 @@ Editor ima dugme „Popuni tekstove pomoću AI“ koje iz naziva biznisa i delat
 
 1. Napravite besplatan ključ na https://aistudio.google.com/apikey
 2. Upišite ga u `GEMINI_API_KEY` (samo server, nikad `NEXT_PUBLIC_`).
-3. Po potrebi promenite model u `GEMINI_MODEL` (podrazumevano `gemini-2.5-flash-lite`).
+3. Po potrebi promenite model u `GEMINI_MODEL` (podrazumevano `gemini-flash-lite-latest`).
 
 Ruta je `app/api/ai/suggest/route.ts`, logika u `lib/ai.ts`. Ako ključ nije postavljen, dugme vraća jasnu poruku i sajt normalno radi dalje. AI popunjava samo tekstove — nikada ne generiše HTML/CSS, pa dizajn ostaje stabilan.
 
-## Nalozi i naplata
+## Objavljivanje sajta
 
+- Dugme **„Objavi sajt“** u uređivaču postavlja `sites.status = 'published'` i dodeljuje jedinstvenu adresu.
+- Javna strana je `app/s/[slug]/page.tsx` i radi bez prijave, sa SEO meta podacima i JSON-LD.
+- Server-side renderer je `components/site-preview.tsx` (isti kod kao pregled u uređivaču), a forma za upite je u `components/public-site.tsx`.
+- Adresa mora biti jedinstvena na celoj platformi — čuva je indeks `sites_slug_key`, a `app/api/sites/publish/route.ts` rešava sudare dodavanjem sufiksa (`-2`, `-3`…).
+- Upiti poslati sa javne strane vezuju se za sajt preko `site_id` (samo ako je sajt objavljen).
+
+## Nalozi i naplata
 - Registracija/prijava ide preko Supabase Auth (email + lozinka).
 - Sajt se čuva na nalog klikom na „Sačuvaj na nalog“.
 - „Moj nalog“ prikazuje plan, status pretplate i listu sajtova.

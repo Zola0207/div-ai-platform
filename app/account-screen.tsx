@@ -259,6 +259,16 @@ export default function AccountScreen({
                       </p>
                     </div>
                     <div className="flex shrink-0 gap-2">
+                      {site.status === 'published' && (
+                        <a
+                          href={`/s/${site.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100"
+                        >
+                          Otvori
+                        </a>
+                      )}
                       <button onClick={() => onEditSite(site)} className="rounded-xl bg-slate-950 px-3.5 py-2 text-[11px] font-bold text-white transition hover:bg-indigo-700">
                         Uredi
                       </button>

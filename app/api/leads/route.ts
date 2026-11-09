@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     const admin = getSupabaseAdmin();
 
     // Upit sa javnog sajta je uvek dozvoljen. Ako je vlasnik prijavljen,
-    // proveravamo da sajt zaista pripada njemu pre povezivanja.
+    // proveravamo da sajt pripada njemu; ako nije, sajt mora biti objavljen.
     let siteId: string | null = null;
     if (body.siteId) {
       const auth = await getApiAuth(req);
@@ -40,6 +40,14 @@ export async function POST(req: Request) {
           .select('id')
           .eq('id', body.siteId)
           .eq('owner_id', auth.user.id)
+          .maybeSingle();
+        if (site) siteId = site.id;
+      } else {
+        const { data: site } = await admin
+          .from('sites')
+          .select('id')
+          .eq('id', body.siteId)
+          .eq('status', 'published')
           .maybeSingle();
         if (site) siteId = site.id;
       }
