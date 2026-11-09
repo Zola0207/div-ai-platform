@@ -41,7 +41,6 @@ Kopirajte `.env.example` u `.env.local` i popunite vrednosti.
 Skripta je idempotentna i dopunjava i starije baze (npr. `leads` tabelu iz prve verzije), pa je bezbedno pokrenuti je ponovo nakon izmena.
 
 ### Stripe
-
 1. U Dashboard → Developers → Webhooks dodajte endpoint:
    `https://<domen>/api/webhook`
 2. Dogађаји:
@@ -54,6 +53,16 @@ Skripta je idempotentna i dopunjava i starije baze (npr. `leads` tabelu iz prve 
 3. Kopirajte signing secret u `STRIPE_WEBHOOK_SECRET`.
 4. Opciono: napravite mesečne cene u Stripe-u i upišite ID-jeve u `STRIPE_PRICE_SITE`, `STRIPE_PRICE_APP`, `STRIPE_PRICE_MOBILE`. Bez njih checkout koristi inline cene iz `lib/plans.ts`.
 5. Uključite Customer Billing Portal u Stripe podešavanjima (za promenu plana i kartice).
+
+### AI asistent
+
+Editor ima dugme „Popuni tekstove pomoću AI“ koje iz naziva biznisa i delatnosti predlaže slogan, opis, tri usluge i FAQ.
+
+1. Napravite besplatan ključ na https://aistudio.google.com/apikey
+2. Upišite ga u `GEMINI_API_KEY` (samo server, nikad `NEXT_PUBLIC_`).
+3. Po potrebi promenite model u `GEMINI_MODEL` (podrazumevano `gemini-2.5-flash-lite`).
+
+Ruta je `app/api/ai/suggest/route.ts`, logika u `lib/ai.ts`. Ako ključ nije postavljen, dugme vraća jasnu poruku i sajt normalno radi dalje. AI popunjava samo tekstove — nikada ne generiše HTML/CSS, pa dizajn ostaje stabilan.
 
 ## Nalozi i naplata
 

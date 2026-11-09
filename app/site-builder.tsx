@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { getSupabaseClient } from '@/lib/supabase';
 import { PLANS, planName, siteLimitForPlan } from '@/lib/plans';
+import type { AiSiteContent } from '@/lib/ai';
 import type { SiteRecord } from '@/lib/sites';
 import AccountScreen from './account-screen';
 import AuthScreen from './auth-screen';
@@ -55,6 +56,7 @@ type SiteDraft = {
   bookingType: BookingType;
   icon: string;
   businessName: string;
+  businessType?: string;
   slug: string;
   tagline: string;
   description: string;
@@ -995,6 +997,7 @@ function buildDraft(seed: PresetSeed): SiteDraft {
     bookingType: seed.bookingType,
     icon: seed.icon,
     businessName: seed.businessName,
+    businessType: seed.name,
     slug: seed.slug,
     tagline: seed.tagline,
     description: seed.description,
@@ -1051,6 +1054,7 @@ function buildCustomDraft(name: string, businessType: string, bookingType: Booki
     ...base,
     templateId: 'custom',
     businessName: cleanName,
+    businessType: cleanType || 'Usluge',
     slug: slugify(cleanName),
     tagline: cleanType ? `${cleanType} — usluga po vašoj meri.` : 'Usluga po vašoj meri.',
     description: `Dobrodošli u ${cleanName}.${cleanType ? ` Bavimo se: ${cleanType.toLowerCase()}.` : ''} Kontaktirajte nas i dogovorite termin.`,
@@ -1130,6 +1134,8 @@ export default function SiteBuilder() {
   const [customName, setCustomName] = useState('');
   const [customType, setCustomType] = useState('');
   const [customBooking, setCustomBooking] = useState<BookingType>('appointment');
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiNotice, setAiNotice] = useState('');
 
   const requireAuth = (reason: string, returnTo: Screen) => {
     setAuthReason(reason);
@@ -1187,6 +1193,40 @@ export default function SiteBuilder() {
   const updateDraft = <K extends keyof SiteDraft>(key: K, value: SiteDraft[K]) => {
     setDraft((current) => current ? { ...current, [key]: value } : current);
     setNotice('');
+  };
+
+  const runAiAssistant = async () => {
+    if (!draft || aiBusy) return;
+
+    setAiBusy(true);
+    setAiNotice('');
+    try {
+      const res = await fetch('/api/ai/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessName: draft.businessName,
+          businessType: draft.businessType || presetName(draft.templateId),
+          bookingType: bookingTypes.find((type) => type.id === draft.bookingType)?.label ?? draft.bookingType,
+        }),
+      });
+      const data = (await res.json()) as Partial<AiSiteContent> & { error?: string };
+
+      if (!res.ok) {
+        setAiNotice(data.error || 'AI trenutno nije dostupan.');
+        return;
+      }
+
+      if (data.tagline) updateDraft('tagline', data.tagline);
+      if (data.description) updateDraft('description', data.description);
+      if (Array.isArray(data.services) && data.services.length) updateDraft('services', data.services);
+      if (Array.isArray(data.faq) && data.faq.length) updateDraft('faq', data.faq);
+      setAiNotice('AI je popunio tekstove. Pregledajte ih i prilagodite pre objave.');
+    } catch {
+      setAiNotice('Veza sa AI servisom nije uspela. Pokušajte ponovo.');
+    } finally {
+      setAiBusy(false);
+    }
   };
 
   const saveToCloud = async (): Promise<boolean> => {
@@ -1476,7 +1516,7 @@ export default function SiteBuilder() {
             <div className="relative grid gap-12 md:grid-cols-[1.1fr_0.9fr] md:items-center">
               <div>
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-indigo-200">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Bez komplikacija. Bez AI-ja.
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Bez komplikacija. Gotovo za nekoliko minuta.
                 </span>
                 <h1 className="mt-6 max-w-2xl text-4xl font-black leading-[1.08] tracking-tight md:text-6xl">Sajt spreman za <span className="text-indigo-300">svaki biznis.</span></h1>
                 <p className="mt-5 max-w-xl text-sm leading-7 text-slate-300 md:text-base">Izaberite delatnost, unesite svoje podatke i prilagodite blokove. Za nekoliko minuta imate pregled sajta sa formom za upite ili zakazivanje.</p>
@@ -1554,7 +1594,7 @@ export default function SiteBuilder() {
 
           <section className="mt-12 grid gap-3 rounded-3xl border border-slate-200 bg-white p-5 sm:grid-cols-3 sm:p-7">
             <Feature icon="1" title="Izaberite delatnost" text="Krećete od strukture prilagođene vašem poslu." />
-            <Feature icon="2" title="Unesite svoje podatke" text="Izmenite naziv, tekst, boju, usluge i kontakt." />
+            <Feature icon="2" title="Unesite svoje podatke" text="Unesite podatke ili pustite AI da predloži tekstove, pa doradite." />
             <Feature icon="3" title="Pregledajte i sačuvajte" text="Sačuvajte na nalog ili u pregledaču i nastavite kasnije." />
           </section>
 
@@ -1620,6 +1660,24 @@ export default function SiteBuilder() {
                   <div className="flex items-center gap-2"><span className="font-mono text-xs text-slate-500">{draft.accentColor}</span><input id="accent-color" type="color" value={draft.accentColor} onChange={(event) => updateDraft('accentColor', event.target.value)} className="h-8 w-10 cursor-pointer rounded-lg border-0 bg-transparent" /></div>
                 </div>
                 <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Demo adresa</p><p className="mt-1 text-sm font-semibold text-indigo-700">{draft.slug}.div.ai</p></div>
+              </EditorCard>
+
+              <EditorCard title="AI asistent" subtitle="Popunite tekstove na osnovu naziva i delatnosti.">
+                <p className="text-[11px] leading-5 text-slate-500">
+                  AI predlaže kratku poruku, opis, tri usluge i česta pitanja. Postojeći tekstovi biće zamenjeni, a posle sve možete izmeniti.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void runAiAssistant()}
+                  disabled={aiBusy}
+                  className="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-extrabold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {aiBusy ? 'AI piše…' : 'Popuni tekstove pomoću AI'}
+                </button>
+                {aiNotice && (
+                  <p role="status" className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold leading-5 text-slate-600">{aiNotice}</p>
+                )}
+                <p className="mt-2 text-[10px] leading-4 text-slate-400">Delatnost: {draft.businessType || presetName(draft.templateId)}</p>
               </EditorCard>
 
               <EditorCard title="Blokovi na sajtu" subtitle="Uključite samo sekcije koje su vam potrebne.">
