@@ -1,38 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DiV.ai — platforma za sajtove, zakazivanje i pretplate
 
-## Getting Started
+Web aplikacija za male biznise: izbor šablona po delatnosti, uređivanje sajta, kalendar dostupnosti, upiti i mesečne pretplate.
 
-First, run the development server:
+## Tehnologije
+
+- Next.js 16 (App Router, Webpack build)
+- Tailwind CSS 4
+- Supabase (Auth, Postgres, RLS)
+- Stripe (pretplate, billing portal, webhook)
+
+## Pokretanje lokalno
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Aplikacija radi i bez Supabase/Stripe ključeva — u tom režimu nacrti se čuvaju u `localStorage`, a upiti u pregledaču.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Podešavanje okruženja
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Kopirajte `.env.example` u `.env.local` i popunite vrednosti.
 
-## Learn More
+### Supabase
 
-To learn more about Next.js, take a look at the following resources:
+1. Otvorite SQL Editor projekta `gjrmhsnewhewzcbyncpr`.
+2. Pokrenite ceo `supabase/schema.sql` (idempotentan je).
+3. U `Authentication → Providers` uključite Email.
+4. Po želji isključite „Confirm email“ za brži lokalni razvoj.
+5. U `Authentication → URL Configuration` dodajte `http://localhost:3000` i produkcijski domen.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Šema pravi:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `profiles` — plan, status pretplate, Stripe ID-jevi
+- `sites` — sajtovi po korisniku (RLS: samo vlasnik)
+- `leads` — upiti, opciono vezani za `site_id`
+- trigger koji pravi profil pri registraciji
+- ograničenje broja sajtova po planu
 
-## Deploy on Vercel
+### Stripe
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. U Dashboard → Developers → Webhooks dodajte endpoint:
+   `https://<domen>/api/webhook`
+2. Dogађаји:
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   - `invoice.paid`
+   - `invoice.payment_failed`
+3. Kopirajte signing secret u `STRIPE_WEBHOOK_SECRET`.
+4. Opciono: napravite mesečne cene u Stripe-u i upišite ID-jeve u `STRIPE_PRICE_SITE`, `STRIPE_PRICE_APP`, `STRIPE_PRICE_MOBILE`. Bez njih checkout koristi inline cene iz `lib/plans.ts`.
+5. Uključite Customer Billing Portal u Stripe podešavanjima (za promenu plana i kartice).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-"# div-ai-platform" 
-"# div-ai-platform" 
+## Nalozi i naplata
+
+- Registracija/prijava ide preko Supabase Auth (email + lozinka).
+- Sajt se čuva na nalog klikom na „Sačuvaj na nalog“.
+- „Moj nalog“ prikazuje plan, status pretplate i listu sajtova.
+- Cena i sadržaj planova: `lib/plans.ts`.
+- Checkout: `app/api/checkout/route.ts`
+- Portal: `app/api/billing-portal/route.ts`
+- Webhook: `app/api/webhook/route.ts`
+
+## Skripte
+
+```bash
+npm run dev      # razvoj (webpack)
+npm run build    # produkcijski build
+npm run start    # pokretanje build-a
+npm run lint     # ESLint
+npx tsc --noEmit # TypeScript provera
+```

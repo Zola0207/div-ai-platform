@@ -1,45 +1,27 @@
-'use client';
-
-import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Suspense } from 'react';
-
-function SuccessContent() {
-  const searchParams = useSearchParams();
-  const sessionId = searchParams.get('session_id');
-
-  return (
-    <div className="max-w-md w-full bg-gray-800 p-8 rounded-2xl shadow-xl text-center border border-gray-700">
-      <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-        ✓
-      </div>
-      <h1 className="text-2xl font-bold mb-2">Uspešno plaćanje!</h1>
-      <p className="text-gray-300 mb-6">
-        Hvala vam što ste izabrali DiV.ai. Vaša pretplata je uspešno aktivirana.
-      </p>
-      
-      {sessionId && (
-        <p className="text-xs text-gray-500 mb-6 break-all">
-          ID sesije: {sessionId}
-        </p>
-      )}
-
-      <Link
-        href="/"
-        className="inline-block w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition duration-200"
-      >
-        Nazad na početnu stranu
-      </Link>
-    </div>
-  );
-}
 
 export default function SuccessPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white px-4">
-      <Suspense fallback={<div className="text-white">Učitavanje...</div>}>
-        <SuccessContent />
-      </Suspense>
+    <div className="flex min-h-screen items-center justify-center bg-[#f7f7f5] px-4 text-slate-900">
+      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-3xl text-emerald-600">
+          ✓
+        </div>
+        <h1 className="mt-5 text-2xl font-black tracking-tight">Pretplata je aktivirana</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Hvala što ste izabrali DiV.ai. Vaš plan je sada aktivan i sajt možete da sačuvate na nalog.
+        </p>
+        <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2.5 text-[11px] leading-5 text-slate-500">
+          Status se u nalogu osvežava u roku od nekoliko sekundi. Ako se ne prikaže odmah, otvorite nalog i kliknite na „Osveži status“.
+        </p>
+        <Link
+          href="/"
+          className="mt-6 inline-block w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-indigo-700"
+        >
+          Nazad na platformu
+        </Link>
+        <p className="mt-3 text-[11px] text-slate-400">Kliknite na svoje ime u zaglavlju da otvorite nalog.</p>
+      </div>
     </div>
   );
 }
