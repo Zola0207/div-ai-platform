@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
@@ -181,15 +180,9 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   };
 }
 
-export default function PublishedSitePage({ params }: PageParams) {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-white" />}>
-      <PublishedSiteContent params={params} />
-    </Suspense>
-  );
-}
+export const dynamic = 'force-dynamic';
 
-async function PublishedSiteContent({ params }: PageParams) {
+export default async function PublishedSitePage({ params }: PageParams) {
   await connection();
   const { slug } = await params;
   const site = await loadSite(slug);

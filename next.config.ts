@@ -5,8 +5,9 @@ const nextConfig: NextConfig = {
   experimental: {
     agentFeedback: true,
   },
-  cacheComponents: true,
-  partialPrefetching: true,
+  // Isključeno: javne strane /s/[slug] moraju da vraćaju pravi 404 i da se
+  // renderuju po zahtevu, što cacheComponents blokira.
+  cacheComponents: false,
 };
 
 export default nextConfig;
