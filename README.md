@@ -70,8 +70,17 @@ Ruta je `app/api/ai/suggest/route.ts`, logika u `lib/ai.ts`. Ako ključ nije pos
 
 **Trajanje termina:** svaka usluga ima `durationMinutes` ili `durationDays`. Podrazumevano se bira po delatnosti (`CATEGORY_DURATION` u `app/site-builder.tsx`), a izuzeci su u `PRESET_DURATIONS`. Kalendar prikazuje samo termine u koje usluga stvarno staje; kada usluga traje ceo dan ili više dana, klijent bira samo datum.
 
-## Objavljivanje sajta
+## Email obaveštenja
 
+Kada posetilac pošalje upit sa objavljenog sajta, vlasnik dobija email sa imenom, telefonom, uslugom i terminom.
+
+1. Napravite besplatan nalog na https://resend.com
+2. Uzmite API ključ i upišite ga u `RESEND_API_KEY`.
+3. Postavite `RESEND_FROM` na verifikovan domen (npr. `DiV.ai <obavestenja@div.ai>`). Bez verifikovanog domena Resend dozvoljava slanje samo na adresu vlasnika naloga.
+
+Logika je u `lib/email.ts`, poziva se iz `app/api/leads/route.ts`. Ako ključ nije postavljen, upit se normalno čuva a email se preskače. Slanje je „best effort“ — greška u mejlu nikada ne obara upis upita.
+
+## Objavljivanje sajta
 - Dugme **„Objavi sajt“** u uređivaču postavlja `sites.status = 'published'` i dodeljuje jedinstvenu adresu.
 - Javna strana je `app/s/[slug]/page.tsx` i radi bez prijave, sa SEO meta podacima i JSON-LD.
 - Server-side renderer je `components/site-preview.tsx` (isti kod kao pregled u uređivaču), a forma za upite je u `components/public-site.tsx`.

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getApiAuth, isServerSupabaseConfigured } from '@/lib/api-auth';
+import { sendNewLeadEmail } from '@/lib/email';
 
 type LeadInput = {
   businessName?: string;
@@ -32,24 +33,34 @@ export async function POST(req: Request) {
     // Upit sa javnog sajta je uvek dozvoljen. Ako je vlasnik prijavljen,
     // proveravamo da sajt pripada njemu; ako nije, sajt mora biti objavljen.
     let siteId: string | null = null;
+    let ownerEmail: string | null = null;
+    let siteName: string | null = null;
+
     if (body.siteId) {
       const auth = await getApiAuth(req);
-      if (auth.user) {
-        const { data: site } = await admin
-          .from('sites')
-          .select('id')
-          .eq('id', body.siteId)
-          .eq('owner_id', auth.user.id)
+      const { data: site } = auth.user
+        ? await admin
+            .from('sites')
+            .select('id, owner_id, name')
+            .eq('id', body.siteId)
+            .eq('owner_id', auth.user.id)
+            .maybeSingle()
+        : await admin
+            .from('sites')
+            .select('id, owner_id, name')
+            .eq('id', body.siteId)
+            .eq('status', 'published')
+            .maybeSingle();
+
+      if (site) {
+        siteId = site.id;
+        siteName = site.name;
+        const { data: profile } = await admin
+          .from('profiles')
+          .select('email')
+          .eq('id', site.owner_id)
           .maybeSingle();
-        if (site) siteId = site.id;
-      } else {
-        const { data: site } = await admin
-          .from('sites')
-          .select('id')
-          .eq('id', body.siteId)
-          .eq('status', 'published')
-          .maybeSingle();
-        if (site) siteId = site.id;
+        ownerEmail = profile?.email ?? null;
       }
     }
 
@@ -67,6 +78,25 @@ export async function POST(req: Request) {
     if (error) {
       console.error('Greška pri upisu upita:', error);
       return NextResponse.json({ error: 'Upit nije moguće sačuvati.' }, { status: 500 });
+    }
+
+    // Obaveštenje vlasniku je "best effort" — upit je već sačuvan.
+    if (ownerEmail) {
+      try {
+        await sendNewLeadEmail({
+          to: ownerEmail,
+          businessName: siteName || body.businessName?.trim() || 'Vaš sajt',
+          lead: {
+            clientName,
+            phone,
+            service: body.service?.trim() || '',
+            date: body.date || '',
+            time: body.time || '',
+          },
+        });
+      } catch (err) {
+        console.error('Greška pri slanju email obaveštenja:', err);
+      }
     }
 
     return NextResponse.json({ ok: true });
