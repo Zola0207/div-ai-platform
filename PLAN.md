@@ -118,7 +118,8 @@ Naslovna · O nama · Usluge i cene · Galerija · Cenovnik · Radno vreme · Za
 - Stripe checkout + webhook (osnovni)
 
 ### Faza 1 — Širina (sve delatnosti) — ✅ urađeno
-- Kategorije + preseti (9 kategorija, 15 šablona)
+- Kategorije + preseti (10 kategorija, 48 šablona)
+- Generički šablon „Druga delatnost“ za delatnosti kojih nema na listi
 - Više blokova (galerija, recenzije, FAQ, mapa)
 - Pregled po kategoriji pri izboru šablona
 - Tipovi zakazivanja (termin, rezervacija, grupni, konsultacija, upit)

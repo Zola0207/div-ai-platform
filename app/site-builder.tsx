@@ -11,7 +11,7 @@ import PricingScreen from './pricing-screen';
 
 type BookingType = 'appointment' | 'reservation' | 'group' | 'consultation' | 'quote';
 type BlockId = 'hero' | 'about' | 'services' | 'gallery' | 'reviews' | 'faq' | 'hours' | 'booking' | 'map' | 'contact';
-type CategoryId = 'beauty' | 'auto' | 'hospitality' | 'health' | 'fitness' | 'education' | 'home' | 'professional' | 'retail';
+type CategoryId = 'beauty' | 'auto' | 'hospitality' | 'health' | 'fitness' | 'education' | 'home' | 'professional' | 'retail' | 'other';
 type Screen = 'home' | 'editor' | 'bookings' | 'pricing' | 'auth' | 'account';
 
 type Service = {
@@ -137,6 +137,7 @@ const categories: { id: CategoryId; label: string; icon: string }[] = [
   { id: 'home', label: 'Usluge u kući', icon: '🏠' },
   { id: 'professional', label: 'Profesionalne usluge', icon: '💼' },
   { id: 'retail', label: 'Prodavnice i zanat', icon: '🛍️' },
+  { id: 'other', label: 'Druga delatnost', icon: '✨' },
 ];
 
 const blockOptions: { id: BlockId; label: string; description: string }[] = [
@@ -297,7 +298,7 @@ type PresetSeed = {
   blocks?: BlockId[];
 };
 
-const presetSeeds: PresetSeed[] = [
+const basePresets: PresetSeed[] = [
   // — Lepota i nega —
   {
     id: 'salon', name: 'Frizerski salon', categoryId: 'beauty', icon: '✂️',
@@ -521,6 +522,472 @@ const presetSeeds: PresetSeed[] = [
   },
 ];
 
+// Skraćeni zapis za šablone kojima ne treba ručno pisati sva polja.
+type CompactPreset = {
+  id: string;
+  name: string;
+  category: CategoryId;
+  icon: string;
+  businessName: string;
+  slug: string;
+  tagline: string;
+  description: string;
+  color: string;
+  booking: BookingType;
+  services: [string, string, string][];
+};
+
+function compactPreset(input: CompactPreset): PresetSeed {
+  return {
+    id: input.id,
+    name: input.name,
+    categoryId: input.category,
+    icon: input.icon,
+    businessName: input.businessName,
+    slug: input.slug,
+    tagline: input.tagline,
+    description: input.description,
+    phone: '+381 60 000 0000',
+    email: `info@${input.slug.replace(/-/g, '')}.rs`,
+    address: 'Beograd, Srbija',
+    accentColor: input.color,
+    bookingType: input.booking,
+    services: input.services.map(([name, description, price]) => ({ name, description, price })),
+  };
+}
+
+const extraPresets: PresetSeed[] = [
+  // — Lepota i nega —
+  compactPreset({
+    id: 'nails', name: 'Manikir i pedikir', category: 'beauty', icon: '💅',
+    businessName: 'Nokti Studio', slug: 'nokti-studio',
+    tagline: 'Uredni nokti, svakog dana.',
+    description: 'Manikir, pedikir i gel lak u prijatnom ambijentu, uz pažljivu negu i sterilne alate.',
+    color: '#db2777', booking: 'appointment',
+    services: [
+      ['Manikir', 'Oblikovanje, nega zanoktica i lak po želji.', 'od 1.800 RSD'],
+      ['Pedikir', 'Kompletna nega stopala i noktiju.', 'od 2.200 RSD'],
+      ['Gel lak', 'Dugotrajna boja koja traje nedeljama.', 'od 2.500 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'lashes', name: 'Trepavice i obrve', category: 'beauty', icon: '👁️',
+    businessName: 'Lash Room', slug: 'lash-room',
+    tagline: 'Pogled koji govori.',
+    description: 'Nadogradnja trepavica i oblikovanje obrva prilagođeno vašem licu i stilu.',
+    color: '#7c3aed', booking: 'appointment',
+    services: [
+      ['Nadogradnja trepavica', 'Klasična, hibridna ili volume tehnika.', 'od 4.000 RSD'],
+      ['Laminacija obrva', 'Oblikovanje i bojenje obrva.', 'od 2.000 RSD'],
+      ['Korekcija', 'Održavanje i dopuna postojećih trepavica.', 'od 2.500 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'massage', name: 'Masaža i relax', category: 'beauty', icon: '🌿',
+    businessName: 'Relax Centar', slug: 'relax-centar',
+    tagline: 'Predah koji vam treba.',
+    description: 'Terapeutske i relaks masaže koje otklanjaju napetost i vraćaju energiju.',
+    color: '#0d9488', booking: 'appointment',
+    services: [
+      ['Terapeutska masaža', 'Ciljano tretiranje bolnih tačaka.', 'od 3.500 RSD'],
+      ['Aroma masaža', 'Relaksacija uz eterična ulja.', 'od 3.000 RSD'],
+      ['Sportska masaža', 'Priprema i oporavak mišića.', 'od 4.000 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'tattoo', name: 'Tetovaža i pirsing', category: 'beauty', icon: '🖋️',
+    businessName: 'Ink Studio', slug: 'ink-studio',
+    tagline: 'Umretnost na koži.',
+    description: 'Autorske tetovaže i pirsing, uz stroge higijenske standarde i konsultaciju pre svake izrade.',
+    color: '#1f2937', booking: 'appointment',
+    services: [
+      ['Konsultacija i skica', 'Dogovor o motivu, veličini i ceni.', 'besplatno'],
+      ['Izrada tetovaže', 'Rad po dogovorenoj skici.', 'od 8.000 RSD'],
+      ['Pirsing', 'Ušne i nosne mindjuše uz sterilnu opremu.', 'od 3.000 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'pet-grooming', name: 'Frizer za pse', category: 'beauty', icon: '🐕',
+    businessName: 'Pet Grooming', slug: 'pet-grooming',
+    tagline: 'Srećan pas, uredna dlaka.',
+    description: 'Kupanje, šišanje i nega dlake za pse svih rasa, uz puno strpljenja i ljubavi.',
+    color: '#f59e0b', booking: 'appointment',
+    services: [
+      ['Kupanje i feniranje', 'Nega dlake šamponom prilagođenim rasi.', 'od 2.000 RSD'],
+      ['Šišanje', 'Oblikovanje dlake prema rasi ili želji.', 'od 3.500 RSD'],
+      ['Nega noktiju i ušiju', 'Skraćivanje noktiju i čišćenje ušiju.', 'od 1.000 RSD'],
+    ],
+  }),
+  // — Auto i moto —
+  compactPreset({
+    id: 'tire', name: 'Vulkanizer', category: 'auto', icon: '🛞',
+    businessName: 'Tire Pro', slug: 'tire-pro',
+    tagline: 'Siguran oslonac na putu.',
+    description: 'Zamena guma, balansiranje i vulkanizacija, brzo i uz proveru pritiska.',
+    color: '#334155', booking: 'quote',
+    services: [
+      ['Zamena guma', 'Montaža i demontaža svih dimenzija.', 'od 1.200 RSD'],
+      ['Balansiranje', 'Ujednačena vožnja bez vibracija.', 'od 800 RSD'],
+      ['Vulkanizacija', 'Krpljenje i sanacija oštećenja.', 'od 1.500 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'car-rent', name: 'Rent a car', category: 'auto', icon: '🚙',
+    businessName: 'Rent Auto', slug: 'rent-auto',
+    tagline: 'Vaš auto, kada vam treba.',
+    description: 'Iznajmljivanje vozila uz fleksibilne uslove, puno osiguranje i dostavu na adresu.',
+    color: '#0284c7', booking: 'reservation',
+    services: [
+      ['Dnevni najam', 'Vozilo sa punim osiguranjem.', 'od 4.000 RSD/dan'],
+      ['Nedeljni najam', 'Povoljniji paket za duže putovanje.', 'od 22.000 RSD'],
+      ['Prevoz do aerodroma', 'Transfer sa vozačem.', 'po dogovoru'],
+    ],
+  }),
+  compactPreset({
+    id: 'towing', name: 'Šlep služba', category: 'auto', icon: '🚨',
+    businessName: 'Auto Šlep 24h', slug: 'auto-slep-24h',
+    tagline: 'Tu smo kada je najteže.',
+    description: 'Dežurna šlep služba 24 sata, prevoz vozila do servisa ili kućne adrese.',
+    color: '#dc2626', booking: 'quote',
+    services: [
+      ['Šlep do servisa', 'Brza intervencija na terenu.', 'od 5.000 RSD'],
+      ['Prevoz vozila', 'Transport na duže relacije.', 'po kilometru'],
+      ['Pomoć na putu', 'Paljenje akumulatora i sitne popravke.', 'od 2.500 RSD'],
+    ],
+  }),
+  // — Ugostiteljstvo —
+  compactPreset({
+    id: 'hotel', name: 'Hotel i apartmani', category: 'hospitality', icon: '🏨',
+    businessName: 'Apartmani More', slug: 'apartmani-more',
+    tagline: 'Odmor bez brige.',
+    description: 'Udobni apartmani blizu centra, sa doručkom i fleksibilnim prijavljivanjem.',
+    color: '#0891b2', booking: 'reservation',
+    services: [
+      ['Noćenje sa doručkom', 'Dvokrevetna soba i doručak.', 'od 6.500 RSD'],
+      ['Apartman', 'Kompletno opremljen apartman za porodicu.', 'od 9.000 RSD'],
+      ['Dugi boravak', 'Posebni uslovi za boravak od 7 dana.', 'po dogovoru'],
+    ],
+  }),
+  compactPreset({
+    id: 'catering', name: 'Ketering', category: 'hospitality', icon: '🍲',
+    businessName: 'Ketering Delikates', slug: 'ketering-delikates',
+    tagline: 'Ukus koji dolazi vama.',
+    description: 'Ketering za poslovne ručkove, proslave i događaje, uz dostavu i posluženje.',
+    color: '#b45309', booking: 'quote',
+    services: [
+      ['Poslovni ručkovi', 'Dnevni meni za kancelarije.', 'od 900 RSD/osobi'],
+      ['Proslave', 'Hladni i topli bife po dogovoru.', 'po dogovoru'],
+      ['Koktel', 'Finger food i piće dobrodošlice.', 'po dogovoru'],
+    ],
+  }),
+  compactPreset({
+    id: 'pizzeria', name: 'Picerija', category: 'hospitality', icon: '🍕',
+    businessName: 'Pizzeria Roma', slug: 'pizzeria-roma',
+    tagline: 'Iz peći, toplo do stola.',
+    description: 'Pizza iz krušne peći, sveže testenine i salate, uz dostavu na kućnu adresu.',
+    color: '#b91c1c', booking: 'reservation',
+    services: [
+      ['Pizza', 'Klasične i autorske kombinacije.', 'od 1.200 RSD'],
+      ['Testenine', 'Sveže pripremljene po porudžbini.', 'od 900 RSD'],
+      ['Dostava', 'Isporuka na adresu u roku od 45 minuta.', 'od 200 RSD'],
+    ],
+  }),
+  // — Zdravlje —
+  compactPreset({
+    id: 'vet', name: 'Veterinarska ambulanta', category: 'health', icon: '🐾',
+    businessName: 'Vet Care', slug: 'vet-care',
+    tagline: 'Nega za svakog ljubimca.',
+    description: 'Pregledi, vakcinacija i savetovanje za pse, mačke i male životinje.',
+    color: '#15803d', booking: 'appointment',
+    services: [
+      ['Pregled', 'Klinički pregled i savet.', 'od 2.500 RSD'],
+      ['Vakcinacija', 'Vakcine po propisanom kalendaru.', 'od 3.000 RSD'],
+      ['Stomatologija', 'Čišćenje kamenca i sanacija zuba.', 'po proceni'],
+    ],
+  }),
+  compactPreset({
+    id: 'psychology', name: 'Psihoterapija', category: 'health', icon: '🧠',
+    businessName: 'Psihoterapija Centar', slug: 'psihoterapija-centar',
+    tagline: 'Prostor za razgovor.',
+    description: 'Individualna i bračna psihoterapija, u ordinaciji ili online, uz punu diskreciju.',
+    color: '#6d28d9', booking: 'consultation',
+    services: [
+      ['Individualna terapija', 'Rad na anksioznosti, stresu i odnosima.', 'od 4.000 RSD'],
+      ['Bračno savetovanje', 'Zajedničke seanse za partnere.', 'od 5.500 RSD'],
+      ['Online seansa', 'Terapija preko video poziva.', 'od 4.000 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'nutrition', name: 'Nutricionista', category: 'health', icon: '🥗',
+    businessName: 'Nutri Plan', slug: 'nutri-plan',
+    tagline: 'Plan koji se drži.',
+    description: 'Individualni planovi ishrane i praćenje rezultata, bez strogih i neodrživih dijeta.',
+    color: '#65a30d', booking: 'consultation',
+    services: [
+      ['Prvi pregled', 'Analiza navika i sastava tela.', 'od 3.500 RSD'],
+      ['Plan ishrane', 'Jelovnik prilagođen cilju i načinu života.', 'od 6.000 RSD'],
+      ['Praćenje', 'Kontrolni pregledi i korekcija plana.', 'od 2.000 RSD'],
+    ],
+  }),
+  // — Sport i fitnes —
+  compactPreset({
+    id: 'yoga', name: 'Joga studio', category: 'fitness', icon: '🧘',
+    businessName: 'Yoga Space', slug: 'yoga-space',
+    tagline: 'Disanje, pokret, mir.',
+    description: 'Joga za sve nivoe, u malim grupama i uz posvećene instruktore.',
+    color: '#0f766e', booking: 'group',
+    services: [
+      ['Joga za početnike', 'Osnove pokreta i disanja.', 'od 1.200 RSD'],
+      ['Vinyasa', 'Dinamična praksa za iskusnije.', 'od 1.500 RSD'],
+      ['Meditacija', 'Vođena meditacija i opuštanje.', 'od 900 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'dance', name: 'Plesna škola', category: 'fitness', icon: '💃',
+    businessName: 'Dance Studio', slug: 'dance-studio',
+    tagline: 'Ples je najbolja zabava.',
+    description: 'Grupni i individualni časovi plesa za decu i odrasle, bez obzira na iskustvo.',
+    color: '#e11d48', booking: 'group',
+    services: [
+      ['Latino plesovi', 'Salsa, bachata i cha-cha.', 'od 2.000 RSD'],
+      ['Standardni plesovi', 'Valcer, tango i fokstrot.', 'od 2.000 RSD'],
+      ['Društveni ples', 'Opustite se i naučite osnove.', 'od 1.500 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'martial', name: 'Borilački klub', category: 'fitness', icon: '🥊',
+    businessName: 'Fight Club', slug: 'fight-club',
+    tagline: 'Snaga i disciplina.',
+    description: 'Treninzi za decu i odrasle, od rekreativnog vežbanja do takmičarske pripreme.',
+    color: '#b91c1c', booking: 'group',
+    services: [
+      ['MMA', 'Kompletna borilačka priprema.', 'od 2.500 RSD'],
+      ['Boks', 'Tehnika, kondicija i sparing.', 'od 2.000 RSD'],
+      ['Samoodbrana', 'Praktične tehnike za svakodnevicu.', 'od 1.800 RSD'],
+    ],
+  }),
+  // — Edukacija —
+  compactPreset({
+    id: 'music-school', name: 'Muzička škola', category: 'education', icon: '🎹',
+    businessName: 'Muzička Škola Note', slug: 'muzicka-skola-note',
+    tagline: 'Prvi akord je najvažniji.',
+    description: 'Individualna nastava klavira, gitare i pevanja za decu i odrasle.',
+    color: '#7c2d12', booking: 'appointment',
+    services: [
+      ['Klavir', 'Individualni časovi za sve uzraste.', 'od 2.000 RSD'],
+      ['Gitara', 'Akustična i električna gitara.', 'od 2.000 RSD'],
+      ['Pevanje', 'Tehnika disanja i interpretacija.', 'od 2.500 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'tutoring', name: 'Instrukcije', category: 'education', icon: '📖',
+    businessName: 'Instrukcije Plus', slug: 'instrukcije-plus',
+    tagline: 'Gradivo koje konačno legne.',
+    description: 'Individualne instrukcije i priprema za prijemne ispite, uživo ili online.',
+    color: '#1d4ed8', booking: 'appointment',
+    services: [
+      ['Matematika', 'Osnovna škola i gimnazija.', 'od 1.500 RSD'],
+      ['Fizika', 'Objašnjenje kroz primere i zadatke.', 'od 1.500 RSD'],
+      ['Priprema za prijemni', 'Sistematska priprema i testovi.', 'od 2.000 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'it-academy', name: 'IT akademija', category: 'education', icon: '💻',
+    businessName: 'Code Academy', slug: 'code-academy',
+    tagline: 'Od nule do prvog posla.',
+    description: 'Praktični kursevi programiranja i dizajna, u malim grupama i uz mentore iz industrije.',
+    color: '#4338ca', booking: 'group',
+    services: [
+      ['Web development', 'HTML, CSS, JavaScript i React.', 'od 45.000 RSD'],
+      ['Python', 'Osnove programiranja i automatizacija.', 'od 40.000 RSD'],
+      ['UI/UX dizajn', 'Figmа, prototipi i korisničko iskustvo.', 'od 42.000 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'kindergarten', name: 'Vrtić', category: 'education', icon: '🧸',
+    businessName: 'Vrtić Sunce', slug: 'vrtic-sunce',
+    tagline: 'Sigurno mesto za rast.',
+    description: 'Celodnevni i poludnevni boravak za decu od jedne do šest godina.',
+    color: '#f59e0b', booking: 'quote',
+    services: [
+      ['Celodnevni boravak', 'Obroci, igra i odmor.', 'po dogovoru'],
+      ['Poludnevni boravak', 'Jutarnji ili popodnevni program.', 'po dogovoru'],
+      ['Jaslice', 'Program za najmlađe uz posebnu negu.', 'po dogovoru'],
+    ],
+  }),
+  // — Usluge u kući —
+  compactPreset({
+    id: 'plumber', name: 'Vodoinstalater', category: 'home', icon: '🚰',
+    businessName: 'Vodo Instal', slug: 'vodo-instal',
+    tagline: 'Voda pod kontrolom.',
+    description: 'Popravke i instalacije vodovodnih i grejnih sistema, bez odlaganja.',
+    color: '#0369a1', booking: 'quote',
+    services: [
+      ['Popravka slavina', 'Zamena kartuše i dihtunga.', 'od 2.000 RSD'],
+      ['Zamena cevi', 'Nove instalacije i rekonstrukcije.', 'po proceni'],
+      ['Hitne intervencije', 'Dežurstvo za curenje i havarije.', 'od 4.000 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'cleaning', name: 'Čišćenje', category: 'home', icon: '🧽',
+    businessName: 'Clean Pro', slug: 'clean-pro',
+    tagline: 'Čisto bez vašeg truda.',
+    description: 'Generalno i dubinsko čišćenje stanova, kuća i poslovnih prostora.',
+    color: '#0d9488', booking: 'quote',
+    services: [
+      ['Generalno čišćenje', 'Stanovi i kuće do 100 m².', 'od 6.000 RSD'],
+      ['Dubinsko čišćenje', 'Nameštaj, tepisi i tvrdokorne mrlje.', 'od 9.000 RSD'],
+      ['Poslovni prostori', 'Redovno održavanje kancelarija.', 'po dogovoru'],
+    ],
+  }),
+  compactPreset({
+    id: 'ac-service', name: 'Klima servis', category: 'home', icon: '❄️',
+    businessName: 'Klima Servis', slug: 'klima-servis',
+    tagline: 'Prihvatljiva temperatura cele godine.',
+    description: 'Servis, montaža i punjenje klima uređaja, uz redovno održavanje.',
+    color: '#0ea5e9', booking: 'quote',
+    services: [
+      ['Servis klime', 'Čišćenje filtera i provera rada.', 'od 3.500 RSD'],
+      ['Montaža', 'Ugradnja nove klima jedinice.', 'od 12.000 RSD'],
+      ['Punjenje gasa', 'Dopuna freona i provera zaptivenosti.', 'od 4.500 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'carpenter', name: 'Stolar', category: 'home', icon: '🪚',
+    businessName: 'Stolarstvo Drvo', slug: 'stolarstvo-drvo',
+    tagline: 'Nameštaj po meri.',
+    description: 'Izrada kuhinja, plakara i nameštaja po meri, od ideje do montaže.',
+    color: '#92400e', booking: 'quote',
+    services: [
+      ['Kuhinje po meri', 'Projektovanje i izrada.', 'po proceni'],
+      ['Plakari', 'Ugradni i samostojeći.', 'po proceni'],
+      ['Nameštaj po meri', 'Stolovi, police i ostalo.', 'po proceni'],
+    ],
+  }),
+  compactPreset({
+    id: 'moving', name: 'Selidbe', category: 'home', icon: '📦',
+    businessName: 'Selidbe Express', slug: 'selidbe-express',
+    tagline: 'Selidba bez stresa.',
+    description: 'Selidbe stanova i kancelarija, uz pakovanje, utovar i prevoz.',
+    color: '#475569', booking: 'quote',
+    services: [
+      ['Selidba stana', 'Utovar, prevoz i istovar.', 'od 15.000 RSD'],
+      ['Selidba kancelarije', 'Organizovano preseljenje opreme.', 'po proceni'],
+      ['Kombi prevoz', 'Najam vozila sa vozačem.', 'od 6.000 RSD'],
+    ],
+  }),
+  // — Profesionalne usluge —
+  compactPreset({
+    id: 'lawyer', name: 'Advokat', category: 'professional', icon: '⚖️',
+    businessName: 'Advokatska Kancelarija', slug: 'advokatska-kancelarija',
+    tagline: 'Pravna sigurnost.',
+    description: 'Pravno savetovanje i zastupanje u građanskim i privrednim predmetima.',
+    color: '#1e293b', booking: 'consultation',
+    services: [
+      ['Pravno savetovanje', 'Usmena pravna pomoć i mišljenje.', 'od 3.000 RSD'],
+      ['Zastupanje', 'Zastupanje pred sudom.', 'po dogovoru'],
+      ['Ugovori', 'Izrada i revizija ugovora.', 'od 8.000 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'realestate', name: 'Nekretnine', category: 'professional', icon: '🏢',
+    businessName: 'Agencija Nekretnina', slug: 'agencija-nekretnina',
+    tagline: 'Prava adresa, bez lutanja.',
+    description: 'Posredovanje u prodaji i kupovini stanova, kuća i poslovnih prostora.',
+    color: '#0f766e', booking: 'consultation',
+    services: [
+      ['Prodaja stana', 'Procena, fotografije i oglasi.', 'po dogovoru'],
+      ['Kupovina', 'Pronalaženje nekretnine po meri.', 'po dogovoru'],
+      ['Procena vrednosti', 'Realna procena tržišne cene.', 'od 5.000 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'marketing', name: 'Marketing agencija', category: 'professional', icon: '📈',
+    businessName: 'Digital Studio', slug: 'digital-studio',
+    tagline: 'Vidljivost koja donosi klijente.',
+    description: 'Strategija, društvene mreže i plaćeni oglasi za male i srednje biznise.',
+    color: '#c026d3', booking: 'consultation',
+    services: [
+      ['Strategija', 'Plan kanala i sadržaja.', 'od 30.000 RSD'],
+      ['Društvene mreže', 'Vođenje profila i objave.', 'od 25.000 RSD/mes'],
+      ['Plaćeni oglasi', 'Kampanje i optimizacija.', 'po dogovoru'],
+    ],
+  }),
+  compactPreset({
+    id: 'photo-studio', name: 'Foto studio', category: 'professional', icon: '📷',
+    businessName: 'Foto Studio', slug: 'foto-studio',
+    tagline: 'Trenuci koji ostaju.',
+    description: 'Portreti, venčanja i komercijalna fotografija, uz uređivanje i obradu.',
+    color: '#334155', booking: 'appointment',
+    services: [
+      ['Portret', 'Studijsko snimanje i obrada.', 'od 6.000 RSD'],
+      ['Venčanje', 'Celodnevno praćenje događaja.', 'od 45.000 RSD'],
+      ['Proizvodi', 'Fotografija za prodaju i kataloge.', 'po dogovoru'],
+    ],
+  }),
+  // — Prodavnice i zanat —
+  compactPreset({
+    id: 'clothes', name: 'Prodavnica odeće', category: 'retail', icon: '👗',
+    businessName: 'Moda Shop', slug: 'moda-shop',
+    tagline: 'Stil za svaki dan.',
+    description: 'Ženska i muška kolekcija, uz lično savetovanje pri izboru.',
+    color: '#be185d', booking: 'quote',
+    services: [
+      ['Ženska kolekcija', 'Dnevne i svečane kombinacije.', 'od 3.000 RSD'],
+      ['Muška kolekcija', 'Košulje, pantalone i jakne.', 'od 3.500 RSD'],
+      ['Dodaci', 'Tašne, kaiševi i nakit.', 'od 1.500 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'bookstore', name: 'Knjižara', category: 'retail', icon: '📚',
+    businessName: 'Knjižara Reč', slug: 'knjizara-rec',
+    tagline: 'Dobra knjiga je uvek tu.',
+    description: 'Knjige, školski pribor i pokloni, uz mogućnost poručivanja naslova.',
+    color: '#78350f', booking: 'quote',
+    services: [
+      ['Knjige', 'Domaći i strani naslovi.', 'od 800 RSD'],
+      ['Školski pribor', 'Sveske, olovke i oprema.', 'od 100 RSD'],
+      ['Pokloni', 'Ideje za svaku priliku.', 'od 500 RSD'],
+    ],
+  }),
+  compactPreset({
+    id: 'jewelry', name: 'Zlatara', category: 'retail', icon: '💍',
+    businessName: 'Zlatara Sjaj', slug: 'zlatara-sjaj',
+    tagline: 'Detalj koji traje.',
+    description: 'Prstenje, nakit po meri i popravke, uz sertifikat o kvalitetu.',
+    color: '#a16207', booking: 'quote',
+    services: [
+      ['Prstenje', 'Burme i veridbeni prstenovi.', 'od 25.000 RSD'],
+      ['Nakit po meri', 'Izrada prema vašoj ideji.', 'po dogovoru'],
+      ['Popravke', 'Zamena kopči i poliranje.', 'od 2.000 RSD'],
+    ],
+  }),
+];
+
+// Generički šablon: korisnik unosi naziv i delatnost, a struktura je spremna za izmenu.
+const customSeed: PresetSeed = {
+  id: 'custom',
+  name: 'Druga delatnost',
+  categoryId: 'other',
+  icon: '✨',
+  businessName: 'Vaš biznis',
+  slug: 'vas-biznis',
+  tagline: 'Usluga po vašoj meri.',
+  description: 'Ukratko predstavite svoj biznis, usluge i način kontakta. Sve tekstove možete slobodno da izmenite.',
+  phone: '+381 60 000 0000',
+  email: 'kontakt@vasbiznis.rs',
+  address: 'Beograd, Srbija',
+  accentColor: '#4f46e5',
+  bookingType: 'appointment',
+  services: [
+    { name: 'Usluga 1', description: 'Kratko opišite šta nudite.', price: 'po dogovoru' },
+    { name: 'Usluga 2', description: 'Dodajte još jednu uslugu iz svoje ponude.', price: 'po dogovoru' },
+    { name: 'Konsultacija', description: 'Razgovor o vašim potrebama.', price: 'besplatno' },
+  ],
+};
+
+const presetSeeds: PresetSeed[] = [...basePresets, ...extraPresets, customSeed];
+
 function buildDraft(seed: PresetSeed): SiteDraft {
   return {
     templateId: seed.id,
@@ -564,6 +1031,33 @@ function copyTemplate(templateId: string): SiteDraft {
   return JSON.parse(JSON.stringify(found ?? presets[0])) as SiteDraft;
 }
 
+function slugify(value: string): string {
+  const map: Record<string, string> = { č: 'c', ć: 'c', ž: 'z', š: 's', đ: 'd' };
+  const slug = value
+    .toLowerCase()
+    .replace(/[čćžšđ]/g, (char) => map[char] ?? char)
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+  return slug || `sajt-${Date.now()}`;
+}
+
+// Pravi generički sajt za delatnost koje nema u katalogu.
+function buildCustomDraft(name: string, businessType: string, bookingType: BookingType): SiteDraft {
+  const base = copyTemplate('custom');
+  const cleanName = name.trim() || 'Moj biznis';
+  const cleanType = businessType.trim();
+  return {
+    ...base,
+    templateId: 'custom',
+    businessName: cleanName,
+    slug: slugify(cleanName),
+    tagline: cleanType ? `${cleanType} — usluga po vašoj meri.` : 'Usluga po vašoj meri.',
+    description: `Dobrodošli u ${cleanName}.${cleanType ? ` Bavimo se: ${cleanType.toLowerCase()}.` : ''} Kontaktirajte nas i dogovorite termin.`,
+    bookingType,
+  };
+}
+
 function readBookings(): Booking[] {
   try {
     const saved = localStorage.getItem(BOOKINGS_KEY);
@@ -573,7 +1067,8 @@ function readBookings(): Booking[] {
   }
 }
 
-function normalizeDraft(parsed: Partial<SiteDraft>): SiteDraft | null {  if (!parsed.templateId || !Array.isArray(parsed.services) || !Array.isArray(parsed.visibleBlocks)) {
+function normalizeDraft(parsed: Partial<SiteDraft>): SiteDraft | null {
+  if (!parsed.templateId || !Array.isArray(parsed.services) || !Array.isArray(parsed.visibleBlocks)) {
     return null;
   }
   const base = copyTemplate(parsed.templateId);
@@ -631,6 +1126,10 @@ export default function SiteBuilder() {
   const [cloudBusy, setCloudBusy] = useState(false);
   const [authReason, setAuthReason] = useState('');
   const [authReturn, setAuthReturn] = useState<Screen>('home');
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customType, setCustomType] = useState('');
+  const [customBooking, setCustomBooking] = useState<BookingType>('appointment');
 
   const requireAuth = (reason: string, returnTo: Screen) => {
     setAuthReason(reason);
@@ -675,13 +1174,15 @@ export default function SiteBuilder() {
     return () => { active = false; };
   }, [authReady, user, configured]);
 
-  const openTemplate = (templateId: string) => {
-    setDraft(copyTemplate(templateId));
+  const openDraft = (next: SiteDraft) => {
+    setDraft(next);
     setCloudSiteId(null);
     setBookingMessage('');
     setNotice('');
     setScreen('editor');
   };
+
+  const openTemplate = (templateId: string) => openDraft(copyTemplate(templateId));
 
   const updateDraft = <K extends keyof SiteDraft>(key: K, value: SiteDraft[K]) => {
     setDraft((current) => current ? { ...current, [key]: value } : current);
@@ -918,9 +1419,13 @@ export default function SiteBuilder() {
     });
   };
 
-  const visiblePresets = categoryFilter === 'all'
+  // Generički šablon se prikazuje kao posebna kartica, ne u mreži preseta.
+  const visiblePresets = (categoryFilter === 'all'
     ? presets
-    : presets.filter((preset) => preset.categoryId === categoryFilter);
+    : presets.filter((preset) => preset.categoryId === categoryFilter))
+    .filter((preset) => preset.templateId !== 'custom');
+  const showCustomCard = categoryFilter === 'all' || categoryFilter === 'other';
+  const presetCount = presets.length - 1;
 
   return (
     <main className="min-h-screen bg-[#f7f7f5] text-slate-900">
@@ -1003,9 +1508,9 @@ export default function SiteBuilder() {
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.17em] text-indigo-700">Počnite od šablona</p>
                 <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Čime se bavite?</h2>
-                <p className="mt-2 text-sm text-slate-500">Izaberite delatnost, pa šablon koji vam odgovara. Svaki ima pripremljene usluge i formu.</p>
+                <p className="mt-2 text-sm text-slate-500">Izaberite delatnost, pa šablon koji vam odgovara. Ako vaše delatnosti nema na listi, napravite sajt za nju u nekoliko klikova.</p>
               </div>
-              <span className="w-fit rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-500">{presets.length} šablona</span>
+              <span className="w-fit rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-500">{presetCount} šablona</span>
             </div>
 
             <div className="mt-6 flex flex-wrap gap-2">
@@ -1016,6 +1521,18 @@ export default function SiteBuilder() {
             </div>
 
             <div className="mt-7 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {showCustomCard && (
+                <article className="flex flex-col overflow-hidden rounded-3xl border-2 border-dashed border-indigo-300 bg-indigo-50/50 p-6 transition hover:-translate-y-1 hover:border-indigo-400 hover:shadow-xl">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">✨</span>
+                  <h3 className="mt-4 text-lg font-black tracking-tight">Druga delatnost</h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Vaš biznis nije na listi? Unesite naziv i delatnost — pripremićemo strukturu koju dalje uređujete.
+                  </p>
+                  <button onClick={() => setCustomOpen(true)} className="mt-auto pt-5 text-left text-xs font-extrabold text-indigo-700 transition hover:text-indigo-900">
+                    Napravi svoj sajt <span aria-hidden="true">→</span>
+                  </button>
+                </article>
+              )}
               {visiblePresets.map((preset) => {
                 const category = categories.find((item) => item.id === preset.categoryId);
                 return (
@@ -1320,6 +1837,75 @@ export default function SiteBuilder() {
             {bookings.length === 0 ? <div className="px-6 py-16 text-center"><span className="text-4xl">📭</span><h2 className="mt-4 text-lg font-black">Još nema upita</h2><p className="mt-1 text-sm text-slate-500">Pošaljite probni zahtev kroz formu u pregledu sajta.</p><button onClick={() => { setScreen('home'); loadDraft(); }} className="mt-5 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">Otvori sačuvani sajt</button></div> : <div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3">Klijent</th><th className="px-5 py-3">Biznis</th><th className="px-5 py-3">Usluga</th><th className="px-5 py-3">Termin</th><th className="px-5 py-3">Telefon</th></tr></thead><tbody className="divide-y divide-slate-100">{bookings.map((booking) => <tr key={booking.id}><td className="px-5 py-4 font-bold">{booking.clientName}</td><td className="px-5 py-4">{booking.businessName}</td><td className="px-5 py-4">{booking.service}</td><td className="px-5 py-4">{booking.date} · {booking.time}</td><td className="px-5 py-4">{booking.phone}</td></tr>)}</tbody></table></div>}
           </div>
           <p className="mt-4 text-xs text-slate-400">{user ? 'Prikazuju se samo upiti za sajtove sa vašeg naloga.' : 'Upiti se čuvaju u Supabase bazi. Ako baza nije povezana, prikazuju se podaci iz ovog pregledača.'}</p>
+        </div>
+      )}
+      {customOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-8">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-black tracking-tight">Napravite svoj sajt</h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Za bilo koju delatnost. Unesite osnovne podatke — sve ostalo menjate u uređivaču.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCustomOpen(false)}
+                aria-label="Zatvori"
+                className="rounded-lg px-2 py-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                const next = buildCustomDraft(customName, customType, customBooking);
+                setCustomOpen(false);
+                setCustomName('');
+                setCustomType('');
+                openDraft(next);
+              }}
+              className="mt-5 space-y-3"
+            >
+              <label className="block text-xs font-bold text-slate-600">
+                Naziv biznisa
+                <input
+                  value={customName}
+                  onChange={(event) => setCustomName(event.target.value)}
+                  required
+                  placeholder="npr. Studio Mirko"
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium outline-none transition focus:border-indigo-400 focus:bg-white"
+                />
+              </label>
+              <label className="block text-xs font-bold text-slate-600">
+                Čime se bavite?
+                <input
+                  value={customType}
+                  onChange={(event) => setCustomType(event.target.value)}
+                  placeholder="npr. popravka bicikala"
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium outline-none transition focus:border-indigo-400 focus:bg-white"
+                />
+              </label>
+              <label className="block text-xs font-bold text-slate-600">
+                Kako primate klijente?
+                <select
+                  value={customBooking}
+                  onChange={(event) => setCustomBooking(event.target.value as BookingType)}
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium outline-none transition focus:border-indigo-400 focus:bg-white"
+                >
+                  {bookingTypes.map((type) => (
+                    <option key={type.id} value={type.id}>{type.label}</option>
+                  ))}
+                </select>
+              </label>
+              <button type="submit" className="w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-indigo-700">
+                Napravi sajt
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </main>
