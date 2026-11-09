@@ -639,28 +639,41 @@ export default function SiteBuilder() {
   };
 
   useEffect(() => {
+    if (!authReady) return;
+
     let active = true;
     const loadInitialBookings = async () => {
-      const client = getSupabaseClient();
-      const token = client ? (await client.auth.getSession()).data.session?.access_token : null;
+      // U demo režimu (bez Supabase ključeva) upiti ostaju u pregledaču.
+      if (!configured) {
+        if (active) setBookings(readBookings());
+        return;
+      }
+
+      // Bez prijave ne zovemo API — upiti su vezani za nalog.
+      if (!user) {
+        if (active) setBookings([]);
+        return;
+      }
 
       try {
+        const client = getSupabaseClient();
+        const token = client ? (await client.auth.getSession()).data.session?.access_token : null;
+        if (!token) return;
+
         const res = await fetch('/api/leads', {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok && active) {
           const data = (await res.json()) as { leads?: LeadRow[] };
           setBookings((data.leads ?? []).map(mapLead));
-          return;
         }
-      } catch {
-        // Baza nije povezana – nastavljamo sa lokalnim upitima.
+      } catch (err) {
+        console.error('Greška pri učitavanju upita:', err);
       }
-      if (active && !configured) setBookings(readBookings());
     };
     void loadInitialBookings();
     return () => { active = false; };
-  }, [user, configured]);
+  }, [authReady, user, configured]);
 
   const openTemplate = (templateId: string) => {
     setDraft(copyTemplate(templateId));
@@ -682,10 +695,14 @@ export default function SiteBuilder() {
     setCloudBusy(true);
     try {
       if (!cloudSiteId) {
-        const { count } = await client
+        const { count, error: countError } = await client
           .from('sites')
-          .select('id', { count: 'exact', head: true })
+          .select('id', { count: 'exact' })
           .eq('owner_id', user.id);
+        if (countError) {
+          setNotice(`Sajt nije sačuvan na nalog: ${translateDbError(countError.message)}`);
+          return false;
+        }
         const limit = siteLimitForPlan(profile?.plan);
         if ((count ?? 0) >= limit) {
           setNotice(`Plan „${planName(profile?.plan)}“ dozvoljava ${limit} ${limit === 1 ? 'sajt' : 'sajta'}. Nadogradite plan za više.`);

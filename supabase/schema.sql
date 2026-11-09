@@ -51,6 +51,11 @@ create table if not exists public.leads (
 );
 
 alter table public.leads add column if not exists site_id uuid references public.sites(id) on delete set null;
+-- Starije baze (Faza 0) imaju leads bez ovih kolona i sa service NOT NULL.
+alter table public.leads add column if not exists business_name text;
+alter table public.leads add column if not exists preferred_date date;
+alter table public.leads add column if not exists preferred_time text;
+alter table public.leads alter column service drop not null;
 create index if not exists leads_site_id_idx on public.leads (site_id);
 create index if not exists leads_created_at_idx on public.leads (created_at desc);
 

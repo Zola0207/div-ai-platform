@@ -38,6 +38,8 @@ Kopirajte `.env.example` u `.env.local` i popunite vrednosti.
 - trigger koji pravi profil pri registraciji
 - ograničenje broja sajtova po planu
 
+Skripta je idempotentna i dopunjava i starije baze (npr. `leads` tabelu iz prve verzije), pa je bezbedno pokrenuti je ponovo nakon izmena.
+
 ### Stripe
 
 1. U Dashboard → Developers → Webhooks dodajte endpoint:

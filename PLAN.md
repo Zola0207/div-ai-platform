@@ -131,10 +131,15 @@ Naslovna · O nama · Usluge i cene · Galerija · Cenovnik · Radno vreme · Za
 - ⬜ Zaposleni / resursi (više kalendara po biznisu)
 - ⬜ Potvrda i podsetnici emailom / SMS-om
 
-### Faza 3 — Nalozi i naplata
-- Registracija/prijava klijenata
-- Svako svoje sajtove i upite (razdvajanje podataka)
-- Stripe pretplata po nivou, automatsko obnavljanje
+### Faza 3 — Nalozi i naplata — ✅ urađeno (live testiranje čeka Stripe ključeve)
+- ✅ Registracija/prijava preko Supabase Auth (email + lozinka)
+- ✅ Profil sa planom i statusom pretplate (`profiles`, RLS: samo vlasnik čita)
+- ✅ Sajtovi po korisniku (`sites`), čuvanje na nalog i lista u „Moj nalog“
+- ✅ Razdvajanje podataka: upiti se čitaju samo za sajtove sa naloga
+- ✅ Ograničenje broja sajtova po planu (trigger u bazi + provera u klijentu)
+- ✅ Stripe checkout po planu (19 / 49 / 149 € + 999 € jednokratno)
+- ✅ Billing portal i webhook koji ažurira plan i status
+- ⬜ Live test plaćanja (čeka prave Stripe ključeve i `STRIPE_WEBHOOK_SECRET`)
 
 ### Faza 4 — Mobilna aplikacija (premium)
 - Počni kao PWA (sajt koji se instalira kao app)
