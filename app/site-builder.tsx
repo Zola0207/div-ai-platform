@@ -1110,6 +1110,17 @@ function normalizeDraft(parsed: Partial<SiteDraft>): SiteDraft | null {
     reviews: parsed.reviews ?? base.reviews,
     faq: parsed.faq ?? base.faq,
     gallery: parsed.gallery ?? base.gallery,
+    // Stariji nacrti nemaju trajanje po usluzi — dopunjujemo iz šablona.
+    services: Array.isArray(parsed.services) && parsed.services.length > 0
+      ? parsed.services.map((service, index) => {
+          const fallback = base.services[index];
+          return {
+            ...service,
+            durationMinutes: service.durationMinutes ?? fallback?.durationMinutes,
+            durationDays: service.durationDays ?? fallback?.durationDays,
+          };
+        })
+      : base.services,
     availability,
   };
 }
