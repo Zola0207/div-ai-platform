@@ -127,6 +127,8 @@ Naslovna · O nama · Usluge i cene · Galerija · Cenovnik · Radno vreme · Za
 ### Faza 2 — Zakazivanje (jezgro vrednosti) — 🟡 najveći deo urađen
 - ✅ Kalendar dostupnosti: radno vreme po danu, dužina termina, pauza, blokirani datumi
 - ✅ Izbor slobodnog termina u formi (zauzeti termini se ne prikazuju)
+- ✅ Trajanje termina po usluzi (od 15 min do više dana) — kalendar prikazuje samo termine koji stvarno stanu
+- ✅ Logo (upload) ili automatski inicijali, AI slike za naslovnu i galeriju
 - ✅ Izvoz kalendara (.ics za Google / Apple / Outlook)
 - ⬜ Google dvosmerna sinhronizacija (OAuth)
 - ⬜ Zaposleni / resursi (više kalendara po biznisu)

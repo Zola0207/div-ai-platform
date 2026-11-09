@@ -68,6 +68,8 @@ function sanitizeDraft(raw: unknown): SiteDraft | null {
     icon: text(data.icon, '✨'),
     businessName,
     businessType: text(data.businessType) || undefined,
+    logoUrl: text(data.logoUrl) || undefined,
+    heroImageUrl: text(data.heroImageUrl) || undefined,
     slug: text(data.slug),
     tagline: text(data.tagline),
     description: text(data.description),
@@ -85,6 +87,8 @@ function sanitizeDraft(raw: unknown): SiteDraft | null {
         name: text(service.name),
         description: text(service.description),
         price: text(service.price),
+        durationMinutes: Number(service.durationMinutes) > 0 ? Number(service.durationMinutes) : undefined,
+        durationDays: Number(service.durationDays) > 0 ? Number(service.durationDays) : undefined,
       }))
       .filter((service) => service.name),
     reviews: records(data.reviews)
@@ -98,7 +102,7 @@ function sanitizeDraft(raw: unknown): SiteDraft | null {
       .map((item) => ({ question: text(item.question), answer: text(item.answer) }))
       .filter((item) => item.question && item.answer),
     gallery: records(data.gallery)
-      .map((item) => ({ label: text(item.label), emoji: text(item.emoji, '📸') }))
+      .map((item) => ({ label: text(item.label), emoji: text(item.emoji, '📸'), imageUrl: text(item.imageUrl) || undefined }))
       .filter((item) => item.label),
     visibleBlocks: Array.isArray(data.visibleBlocks)
       ? (data.visibleBlocks.filter((block): block is SiteDraft['visibleBlocks'][number] =>

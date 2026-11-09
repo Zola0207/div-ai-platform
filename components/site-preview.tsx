@@ -5,10 +5,16 @@ import { FormEvent, useState } from 'react';
 export type BookingType = 'appointment' | 'reservation' | 'group' | 'consultation' | 'quote';
 export type BlockId = 'hero' | 'about' | 'services' | 'gallery' | 'reviews' | 'faq' | 'hours' | 'booking' | 'map' | 'contact';
 
-type Service = { name: string; description: string; price: string };
+type Service = {
+  name: string;
+  description: string;
+  price: string;
+  durationMinutes?: number;
+  durationDays?: number;
+};
 type Review = { name: string; text: string; rating: number };
 type Faq = { question: string; answer: string };
-type GalleryItem = { label: string; emoji: string };
+type GalleryItem = { label: string; emoji: string; imageUrl?: string };
 type DayAvailability = { open: boolean; start: string; end: string };
 
 export type Availability = {
@@ -36,6 +42,8 @@ export type SiteDraft = {
   icon: string;
   businessName: string;
   businessType?: string;
+  logoUrl?: string;
+  heroImageUrl?: string;
   slug: string;
   tagline: string;
   description: string;
@@ -91,19 +99,41 @@ function timeFromMinutes(total: number): string {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
-function slotsForDate(date: Date, availability: Availability, bookedTimes: string[]): string[] {
+function slotsForDate(date: Date, availability: Availability, bookedTimes: string[], durationMinutes = availability.slotMinutes): string[] {
   const day = availability.week[weekdayIndexOf(date)];
   if (!day?.open) return [];
   const start = minutesFromTime(day.start);
   const end = minutesFromTime(day.end);
-  const step = availability.slotMinutes + availability.bufferMinutes;
+  const step = Math.max(availability.slotMinutes, durationMinutes) + availability.bufferMinutes;
   if (step <= 0 || end <= start) return [];
   const slots: string[] = [];
-  for (let cursor = start; cursor + availability.slotMinutes <= end; cursor += step) {
+  for (let cursor = start; cursor + durationMinutes <= end; cursor += step) {
     const value = timeFromMinutes(cursor);
     if (!bookedTimes.includes(value)) slots.push(value);
   }
   return slots;
+}
+
+function serviceTiming(service: Service | undefined, availability: Availability) {
+  const days = Math.max(0, service?.durationDays ?? 0);
+  const minutes = Math.max(0, service?.durationMinutes ?? availability.slotMinutes);
+  return { days, minutes, fullDay: days >= 1 || minutes >= 480 };
+}
+
+function durationLabel(timing: { days: number; minutes: number }): string {
+  if (timing.days >= 1) return timing.days === 1 ? 'oko 1 dan' : `oko ${timing.days} dana`;
+  if (timing.minutes >= 60) {
+    const hours = Math.round((timing.minutes / 60) * 10) / 10;
+    return `${hours} h`;
+  }
+  return `${timing.minutes} min`;
+}
+
+function initials(value: string): string {
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'Di';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
 export function SitePreview({ draft, onBooking, bookingMessage, bookings, variant = 'preview' }: { draft: SiteDraft; onBooking: (event: FormEvent<HTMLFormElement>) => void; bookingMessage: string; bookings: Booking[]; variant?: 'preview' | 'page' }) {
@@ -117,12 +147,16 @@ export function SitePreview({ draft, onBooking, bookingMessage, bookings, varian
   });
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+  const [selectedServiceName, setSelectedServiceName] = useState('');
+
+  const selectedService = draft.services.find((service) => service.name === selectedServiceName);
+  const timing = serviceTiming(selectedService, draft.availability);
 
   const todayIso = toISODate(new Date());
   const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
   const bookedTimes = selectedDate ? bookings.filter((booking) => booking.date === selectedDate).map((booking) => booking.time) : [];
-  const availableSlots = selectedDate
-    ? slotsForDate(parseISODate(selectedDate), draft.availability, bookedTimes)
+  const availableSlots = selectedDate && !timing.fullDay
+    ? slotsForDate(parseISODate(selectedDate), draft.availability, bookedTimes, timing.minutes)
         .filter((slot) => selectedDate !== todayIso || minutesFromTime(slot) > nowMinutes)
     : [];
 
@@ -138,8 +172,10 @@ export function SitePreview({ draft, onBooking, bookingMessage, bookings, varian
     if (iso < todayIso) return false;
     if (draft.availability.blockedDates.includes(iso)) return false;
     if (!(draft.availability.week[weekdayIndexOf(date)]?.open ?? false)) return false;
-    const dayBooked = bookings.filter((booking) => booking.date === iso).map((booking) => booking.time);
-    const slots = slotsForDate(date, draft.availability, dayBooked);
+    const dayBookings = bookings.filter((booking) => booking.date === iso);
+    if (timing.fullDay) return dayBookings.length === 0;
+    const dayBooked = dayBookings.map((booking) => booking.time);
+    const slots = slotsForDate(date, draft.availability, dayBooked, timing.minutes);
     return (iso === todayIso ? slots.filter((slot) => minutesFromTime(slot) > nowMinutes) : slots).length > 0;
   };
 
@@ -160,7 +196,14 @@ export function SitePreview({ draft, onBooking, bookingMessage, bookings, varian
 
   return <div className={wrapperClass} style={{ '--site-accent': draft.accentColor } as React.CSSProperties}>
     <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3 sm:px-8">
-      <a href="#site-top" className="max-w-[60%] truncate text-sm font-black tracking-tight">{draft.businessName || 'Naziv vašeg biznisa'}</a>
+      <a href="#site-top" className="flex max-w-[60%] items-center gap-2 truncate text-sm font-black tracking-tight">
+        {draft.logoUrl ? (
+          <img src={draft.logoUrl} alt={draft.businessName} className="h-7 w-7 rounded-lg object-contain" />
+        ) : (
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg text-[10px] font-black text-white" style={{ backgroundColor: draft.accentColor }}>{initials(draft.businessName)}</span>
+        )}
+        <span className="truncate">{draft.businessName || 'Naziv vašeg biznisa'}</span>
+      </a>
       <nav className="hidden items-center gap-5 text-[10px] font-semibold text-slate-500 sm:flex">
         {visible('services') && <a href="#site-services" className="hover:text-slate-900">Usluge</a>}
         {visible('about') && <a href="#site-about" className="hover:text-slate-900">O nama</a>}
@@ -170,7 +213,7 @@ export function SitePreview({ draft, onBooking, bookingMessage, bookings, varian
       {visible('booking') && <a href="#site-booking" className="rounded-full px-3 py-2 text-[9px] font-bold text-white" style={{ backgroundColor: draft.accentColor }}>{copy.nav}</a>}
     </div>
 
-    {visible('hero') && <section id="site-top" className="relative overflow-hidden px-6 py-14 text-center sm:px-12 sm:py-20" style={{ background: `linear-gradient(135deg, ${draft.accentColor}1c 0%, #ffffff 75%)` }}>
+    {visible('hero') && <section id="site-top" className="relative overflow-hidden px-6 py-14 text-center sm:px-12 sm:py-20" style={{ background: draft.heroImageUrl ? `linear-gradient(rgba(255,255,255,0.88), rgba(255,255,255,0.94)), url(${draft.heroImageUrl}) center/cover no-repeat` : `linear-gradient(135deg, ${draft.accentColor}1c 0%, #ffffff 75%)` }}>
       <span className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.16em]" style={{ color: draft.accentColor, backgroundColor: `${draft.accentColor}12` }}><span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: draft.accentColor }} />{draft.icon} {draft.businessName}</span>
       <h1 className="mx-auto mt-5 max-w-2xl text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">{draft.tagline || 'Vaša poruka dobrodošlice'}</h1>
       <p className="mx-auto mt-4 max-w-xl text-xs leading-6 text-slate-600 sm:text-sm">{draft.description}</p>
@@ -185,12 +228,12 @@ export function SitePreview({ draft, onBooking, bookingMessage, bookings, varian
 
     {visible('services') && <section id="site-services" className="bg-[#fafafa] px-6 py-9 sm:px-12 sm:py-12">
       <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-[9px] font-extrabold uppercase tracking-[0.17em]" style={{ color: draft.accentColor }}>Šta nudimo</p><h2 className="mt-2 text-xl font-black tracking-tight sm:text-2xl">Naše usluge</h2></div><span className="text-[10px] text-slate-400">Kvalitet i pažnja u svakom detalju</span></div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">{draft.services.map((service, index) => <article key={`${service.name}-${index}`} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"><span className="flex h-8 w-8 items-center justify-center rounded-xl text-xs font-black" style={{ color: draft.accentColor, backgroundColor: `${draft.accentColor}12` }}>0{index + 1}</span><h3 className="mt-3 text-xs font-black sm:text-sm">{service.name || 'Naziv usluge'}</h3><p className="mt-1.5 min-h-9 text-[10px] leading-5 text-slate-500">{service.description}</p><p className="mt-3 text-[10px] font-extrabold" style={{ color: draft.accentColor }}>{service.price}</p></article>)}</div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">{draft.services.map((service, index) => <article key={`${service.name}-${index}`} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"><span className="flex h-8 w-8 items-center justify-center rounded-xl text-xs font-black" style={{ color: draft.accentColor, backgroundColor: `${draft.accentColor}12` }}>0{index + 1}</span><h3 className="mt-3 text-xs font-black sm:text-sm">{service.name || 'Naziv usluge'}</h3><p className="mt-1.5 min-h-9 text-[10px] leading-5 text-slate-500">{service.description}</p><p className="mt-3 text-[10px] font-extrabold" style={{ color: draft.accentColor }}>{service.price}</p>{(service.durationMinutes || service.durationDays) ? <p className="mt-1 text-[9px] font-semibold text-slate-400">Trajanje: {durationLabel({ days: service.durationDays ?? 0, minutes: service.durationMinutes ?? 0 })}</p> : null}</article>)}</div>
     </section>}
 
     {visible('gallery') && <section className="px-6 py-9 sm:px-12 sm:py-12">
       <div><p className="text-[9px] font-extrabold uppercase tracking-[0.17em]" style={{ color: draft.accentColor }}>Naš rad</p><h2 className="mt-2 text-xl font-black tracking-tight sm:text-2xl">Galerija</h2></div>
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">{draft.gallery.map((item, index) => <div key={`${item.label}-${index}`} className="flex aspect-[4/3] flex-col items-center justify-center gap-2 rounded-2xl border border-slate-100" style={{ backgroundColor: `${draft.accentColor}0c` }}><span className="text-3xl">{item.emoji}</span><span className="text-[10px] font-bold text-slate-600">{item.label}</span></div>)}</div>
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">{draft.gallery.map((item, index) => <div key={`${item.label}-${index}`} className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-slate-100" style={{ backgroundColor: `${draft.accentColor}0c` }}>{item.imageUrl ? (<><img src={item.imageUrl} alt={item.label} loading="lazy" className="h-full w-full object-cover" /><span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2 text-[10px] font-bold text-white">{item.label}</span></>) : (<div className="flex h-full flex-col items-center justify-center gap-2"><span className="text-3xl">{item.emoji}</span><span className="text-[10px] font-bold text-slate-600">{item.label}</span></div>)}</div>)}</div>
     </section>}
 
     {visible('reviews') && <section id="site-reviews" className="bg-[#fafafa] px-6 py-9 sm:px-12 sm:py-12">
@@ -213,12 +256,13 @@ export function SitePreview({ draft, onBooking, bookingMessage, bookings, varian
       <form onSubmit={onBooking} className="mx-auto mt-5 grid max-w-2xl gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:grid-cols-2 sm:p-5">
         <PreviewInput label="Ime i prezime" name="clientName" placeholder="Vaše ime" required />
         <PreviewInput label="Broj telefona" name="clientPhone" placeholder="06x xxx xxxx" required type="tel" />
-        <label className="block text-[9px] font-bold text-slate-600">{copy.service}<select name="service" required defaultValue="" className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium outline-none focus:border-indigo-400"><option value="" disabled>Izaberite</option>{draft.services.map((service, index) => <option key={`${service.name}-${index}`} value={service.name}>{service.name}</option>)}</select></label>
+        <label className="block text-[9px] font-bold text-slate-600">{copy.service}<select name="service" required value={selectedServiceName} onChange={(event) => { setSelectedServiceName(event.target.value); setSelectedDate(''); setSelectedTime(''); }} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium outline-none focus:border-indigo-400"><option value="" disabled>Izaberite</option>{draft.services.map((service, index) => <option key={`${service.name}-${index}`} value={service.name}>{service.name}</option>)}</select></label>
+        {selectedService && <p className="-mt-1 text-[10px] font-semibold text-slate-500 sm:col-span-2">Trajanje: {durationLabel(timing)} · {timing.fullDay ? 'zauzima ceo dan' : 'termin po dogovoru'}</p>}
         {!isQuote ? (
           <>
             <input type="hidden" name="date" value={selectedDate} />
             <input type="hidden" name="time" value={selectedTime} />
-            <div className="grid gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 sm:col-span-2 sm:grid-cols-[1.05fr_0.95fr]">
+            <div className={`grid gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 sm:col-span-2 ${timing.fullDay ? 'sm:grid-cols-1' : 'sm:grid-cols-[1.05fr_0.95fr]'}`}>
               <div className="rounded-xl bg-white p-3 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
                   <button type="button" aria-label="Prethodni mesec" onClick={() => changeMonth(-1)} className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-xs font-bold text-slate-600 transition hover:bg-slate-100">‹</button>
@@ -252,6 +296,7 @@ export function SitePreview({ draft, onBooking, bookingMessage, bookings, varian
                 </div>
                 <p className="mt-2 text-[8px] leading-4 text-slate-400">Sivi datumi su nedostupni ili već prošli.</p>
               </div>
+              {!timing.fullDay && (
               <div className="rounded-xl bg-white p-3 shadow-sm">
                 <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">Slobodni termini</p>
                 {!selectedDate ? (
@@ -283,12 +328,20 @@ export function SitePreview({ draft, onBooking, bookingMessage, bookings, varian
                   </>
                 )}
               </div>
+              )}
+              {timing.fullDay && (
+                <p className="rounded-xl bg-white px-3 py-2.5 text-[10px] font-semibold leading-5 text-slate-600 shadow-sm">
+                  {timing.days >= 1
+                    ? `Ova usluga traje ${durationLabel(timing)}. Izaberite početni datum — ostatak termina dogovaramo telefonom.`
+                    : `Ova usluga zauzima ceo dan (${durationLabel(timing)}). Izaberite datum.`}
+                </p>
+              )}
             </div>
           </>
         ) : (
           <PreviewInput label="Napomena" name="time" placeholder="Kratak opis potrebe" />
         )}
-        <button type="submit" disabled={!isQuote && (!selectedDate || !selectedTime)} className="rounded-xl px-4 py-3 text-xs font-extrabold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2" style={{ backgroundColor: draft.accentColor }}>{copy.submit} <span aria-hidden="true">→</span></button>
+        <button type="submit" disabled={!isQuote && (!selectedDate || (!timing.fullDay && !selectedTime))} className="rounded-xl px-4 py-3 text-xs font-extrabold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2" style={{ backgroundColor: draft.accentColor }}>{copy.submit} <span aria-hidden="true">→</span></button>
         {bookingMessage && <p role="status" className="rounded-xl bg-emerald-50 px-3 py-2 text-[10px] font-semibold leading-5 text-emerald-800 sm:col-span-2">{bookingMessage}</p>}
       </form>
     </section>}

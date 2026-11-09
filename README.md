@@ -64,6 +64,12 @@ Editor ima dugme „Popuni tekstove pomoću AI“ koje iz naziva biznisa i delat
 
 Ruta je `app/api/ai/suggest/route.ts`, logika u `lib/ai.ts`. Ako ključ nije postavljen, dugme vraća jasnu poruku i sajt normalno radi dalje. AI popunjava samo tekstove — nikada ne generiše HTML/CSS, pa dizajn ostaje stabilan.
 
+**AI slike** idu preko `app/api/ai/images/route.ts`. Generisani tekst preko Gemini-ja je besplatan, ali generisanje slika na Gemini-ju traži plaćen plan, zato slike trenutno pravi Pollinations (besplatno, bez ključa) i čuva se samo URL u nacrtu. Ako kasnije pređete na plaćeni model ili na stock fotografije (Pexels/Unsplash), menja se samo ta ruta.
+
+**Logo:** u uređivaču možete dodati svoj logo (PNG/JPG/WebP/SVG, automatski se smanjuje na 256 px). Ako ga nema, sajt prikazuje inicijale u boji brenda — bez ijednog spoljnog zahteva.
+
+**Trajanje termina:** svaka usluga ima `durationMinutes` ili `durationDays`. Podrazumevano se bira po delatnosti (`CATEGORY_DURATION` u `app/site-builder.tsx`), a izuzeci su u `PRESET_DURATIONS`. Kalendar prikazuje samo termine u koje usluga stvarno staje; kada usluga traje ceo dan ili više dana, klijent bira samo datum.
+
 ## Objavljivanje sajta
 
 - Dugme **„Objavi sajt“** u uređivaču postavlja `sites.status = 'published'` i dodeljuje jedinstvenu adresu.

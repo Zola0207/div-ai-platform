@@ -20,6 +20,8 @@ type Service = {
   name: string;
   description: string;
   price: string;
+  durationMinutes?: number;
+  durationDays?: number;
 };
 
 type Review = {
@@ -36,6 +38,7 @@ type Faq = {
 type GalleryItem = {
   label: string;
   emoji: string;
+  imageUrl?: string;
 };
 
 type DayAvailability = {
@@ -58,6 +61,8 @@ type SiteDraft = {
   icon: string;
   businessName: string;
   businessType?: string;
+  logoUrl?: string;
+  heroImageUrl?: string;
   slug: string;
   tagline: string;
   description: string;
@@ -951,7 +956,52 @@ const customSeed: PresetSeed = {
 
 const presetSeeds: PresetSeed[] = [...basePresets, ...extraPresets, customSeed];
 
+// Podrazumevano trajanje termina po delatnosti (u minutima).
+const CATEGORY_DURATION: Record<CategoryId, number> = {
+  beauty: 60,
+  auto: 90,
+  hospitality: 90,
+  health: 45,
+  fitness: 60,
+  education: 60,
+  home: 120,
+  professional: 60,
+  retail: 30,
+  other: 60,
+};
+
+// Izuzeci: broj = minuti, { days } = posao koji traje ceo dan ili više dana.
+type DurationSpec = number | { days: number };
+const PRESET_DURATIONS: Record<string, DurationSpec[]> = {
+  painter: [480, { days: 2 }, { days: 3 }],
+  moving: [{ days: 1 }, { days: 1 }, 240],
+  'photo-studio': [120, { days: 1 }, 120],
+  carpenter: [{ days: 1 }, { days: 1 }, { days: 1 }],
+  cleaning: [240, 360, 240],
+  'ac-service': [120, 240, 90],
+  electrician: [60, 180, 240],
+  mechanic: [120, 60, 90],
+  'car-wash': [60, 180, 120],
+  massage: [60, 90, 60],
+  tattoo: [60, 180, 90],
+  'pet-grooming': [90, 120, 30],
+  dentist: [45, 60, 90],
+  'it-academy': [240, 240, 240],
+  restaurant: [120, 120, 180],
+  hotel: [{ days: 1 }, { days: 1 }, { days: 1 }],
+  'car-rent': [{ days: 1 }, { days: 7 }, 120],
+};
+
 function buildDraft(seed: PresetSeed): SiteDraft {
+  const overrides = PRESET_DURATIONS[seed.id];
+  const services: Service[] = seed.services.map((service, index) => {
+    const spec = overrides?.[index];
+    if (spec && typeof spec === 'object') {
+      return { ...service, durationDays: spec.days };
+    }
+    return { ...service, durationMinutes: typeof spec === 'number' ? spec : CATEGORY_DURATION[seed.categoryId] };
+  });
+
   return {
     templateId: seed.id,
     categoryId: seed.categoryId,
@@ -967,7 +1017,7 @@ function buildDraft(seed: PresetSeed): SiteDraft {
     address: seed.address,
     hours: seed.hours ?? DEFAULT_HOURS,
     accentColor: seed.accentColor,
-    services: seed.services,
+    services,
     availability: cloneAvailability(seed.availability ?? DEFAULT_AVAILABILITY),
     reviews: seed.reviews ?? [
       { name: 'Milica P.', text: 'Izuzetna usluga i ljubazno osoblje. Sve preporuke!', rating: 5 },
@@ -1098,6 +1148,8 @@ export default function SiteBuilder() {
   const [customBooking, setCustomBooking] = useState<BookingType>('appointment');
   const [aiBusy, setAiBusy] = useState(false);
   const [aiNotice, setAiNotice] = useState('');
+  const [imageBusy, setImageBusy] = useState(false);
+  const [imageNotice, setImageNotice] = useState('');
 
   const requireAuth = (reason: string, returnTo: Screen) => {
     setAuthReason(reason);
@@ -1158,8 +1210,7 @@ export default function SiteBuilder() {
     setNotice('');
   };
 
-  const runAiAssistant = async () => {
-    if (!draft || aiBusy) return;
+  const runAiAssistant = async () => {    if (!draft || aiBusy) return;
 
     setAiBusy(true);
     setAiNotice('');
@@ -1189,6 +1240,66 @@ export default function SiteBuilder() {
       setAiNotice('Veza sa AI servisom nije uspela. Pokušajte ponovo.');
     } finally {
       setAiBusy(false);
+    }
+  };
+
+  const generateImages = async () => {
+    if (!draft || imageBusy) return;
+
+    setImageBusy(true);
+    setImageNotice('');
+    try {
+      const res = await fetch('/api/ai/images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessName: draft.businessName,
+          businessType: draft.businessType || presetName(draft.templateId),
+          labels: draft.gallery.map((item) => item.label),
+        }),
+      });
+      const data = (await res.json()) as {
+        hero?: string;
+        gallery?: { label: string; url: string }[];
+        error?: string;
+      };
+
+      if (!res.ok) {
+        setImageNotice(data.error || 'Slike nisu generisane.');
+        return;
+      }
+
+      if (data.hero) updateDraft('heroImageUrl', data.hero);
+      if (Array.isArray(data.gallery) && data.gallery.length) {
+        updateDraft('gallery', draft.gallery.map((item, index) => ({ ...item, imageUrl: data.gallery?.[index]?.url })));
+      }
+      setImageNotice('Slike su dodate. Prvo učitavanje može da potraje nekoliko sekundi.');
+    } catch {
+      setImageNotice('Slike nisu generisane. Pokušajte ponovo.');
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
+  const uploadLogo = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const bitmap = await createImageBitmap(file);
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const scale = Math.min(size / bitmap.width, size / bitmap.height);
+      const width = Math.max(1, Math.round(bitmap.width * scale));
+      const height = Math.max(1, Math.round(bitmap.height * scale));
+      ctx.clearRect(0, 0, size, size);
+      ctx.drawImage(bitmap, Math.round((size - width) / 2), Math.round((size - height) / 2), width, height);
+      updateDraft('logoUrl', canvas.toDataURL('image/png'));
+      setNotice('Logo je dodat.');
+    } catch {
+      setNotice('Logo nije mogao da se učita. Probajte PNG ili JPG.');
     }
   };
 
@@ -1675,6 +1786,20 @@ export default function SiteBuilder() {
                   <label htmlFor="accent-color" className="text-xs font-bold text-slate-600">Boja sajta</label>
                   <div className="flex items-center gap-2"><span className="font-mono text-xs text-slate-500">{draft.accentColor}</span><input id="accent-color" type="color" value={draft.accentColor} onChange={(event) => updateDraft('accentColor', event.target.value)} className="h-8 w-10 cursor-pointer rounded-lg border-0 bg-transparent" /></div>
                 </div>
+                <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                  <div>
+                    <p className="text-xs font-bold text-slate-600">Logo</p>
+                    <p className="mt-0.5 text-[10px] leading-4 text-slate-400">{draft.logoUrl ? 'Vaš logo se prikazuje u zaglavlju' : 'Bez loga — automatski se prave inicijali'}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {draft.logoUrl && <img src={draft.logoUrl} alt="Logo" className="h-8 w-8 rounded-lg border border-slate-200 bg-white object-contain" />}
+                    <label className="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-700 transition hover:bg-slate-50">
+                      {draft.logoUrl ? 'Zameni' : 'Dodaj'}
+                      <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={(event) => { void uploadLogo(event.target.files?.[0]); event.target.value = ''; }} />
+                    </label>
+                    {draft.logoUrl && <button type="button" onClick={() => updateDraft('logoUrl', undefined)} className="text-[10px] font-bold text-rose-600 hover:underline">Ukloni</button>}
+                  </div>
+                </div>
                 <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Demo adresa</p><p className="mt-1 text-sm font-semibold text-indigo-700">{draft.slug}.div.ai</p></div>
               </EditorCard>
 
@@ -1692,6 +1817,17 @@ export default function SiteBuilder() {
                 </button>
                 {aiNotice && (
                   <p role="status" className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold leading-5 text-slate-600">{aiNotice}</p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void generateImages()}
+                  disabled={imageBusy}
+                  className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-2.5 text-xs font-extrabold text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {imageBusy ? 'Pravim slike…' : 'Dodaj AI slike'}
+                </button>
+                {imageNotice && (
+                  <p role="status" className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold leading-5 text-slate-600">{imageNotice}</p>
                 )}
                 <p className="mt-2 text-[10px] leading-4 text-slate-400">Delatnost: {draft.businessType || presetName(draft.templateId)}</p>
               </EditorCard>
