@@ -141,8 +141,8 @@ Naslovna · O nama · Usluge i cene · Galerija · Cenovnik · Radno vreme · Za
 - ✅ Razdvajanje podataka: upiti se čitaju samo za sajtove sa naloga
 - ✅ Upravljanje upitima: statusi (Novo / Potvrđeno / Završeno / Otkazano), beleške, filteri i pretraga
 - ✅ Email obaveštenje vlasniku na novi upit (Resend, čeka ključ)
-- ✅ Trajanje termina po usluzi i delatnosti (minuti ili dani)
-- ✅ Logo (upload) ili automatski inicijali, AI slike za naslovnu i galeriju
+- ✅ OG slika za deljenje (platforma i svaki sajt), sitemap, robots, 404
+- ✅ Pravne strane: politika privatnosti i uslovi korišćenja
 - ✅ Ograničenje broja sajtova po planu (trigger u bazi + provera u klijentu)
 - ✅ Stripe checkout po planu (19 / 49 / 149 € + 999 € jednokratno)
 - ✅ Billing portal i webhook koji ažurira plan i status

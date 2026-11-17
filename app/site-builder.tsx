@@ -1778,7 +1778,14 @@ export default function SiteBuilder() {
             </div>
           </section>
 
-          <p className="mt-6 text-center text-xs text-slate-400">Sajtovi se čuvaju na vašem nalogu, a upiti iz forme stižu u Supabase bazu.</p>
+          <footer className="mt-10 flex flex-col items-center gap-3 border-t border-slate-200 pt-6 text-center text-xs text-slate-400 sm:flex-row sm:justify-between sm:text-left">
+            <p>Sajtovi se čuvaju na vašem nalogu, a upiti iz forme stižu u vaš panel.</p>
+            <nav className="flex items-center gap-4 font-bold text-slate-500">
+              <a href="/uslovi" className="hover:text-slate-900">Uslovi korišćenja</a>
+              <a href="/privatnost" className="hover:text-slate-900">Privatnost</a>
+              <a href="mailto:podrska@div.ai" className="hover:text-slate-900">Kontakt</a>
+            </nav>
+          </footer>
         </div>
       )}
 

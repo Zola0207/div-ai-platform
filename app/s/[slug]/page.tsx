@@ -172,7 +172,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   const description = draft.description || draft.tagline || `${draft.businessName} — kontakt i zakazivanje.`;
 
   return {
-    title,
+    title: { absolute: title },
     description: description.slice(0, 300),
     alternates: { canonical: `/s/${site.slug}` },
     openGraph: {
@@ -180,6 +180,13 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
       description: description.slice(0, 300),
       type: 'website',
       locale: 'sr_RS',
+      siteName: draft.businessName,
+      url: `/s/${site.slug}`,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: description.slice(0, 300),
     },
   };
 }

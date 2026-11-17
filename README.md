@@ -70,6 +70,15 @@ Ruta je `app/api/ai/suggest/route.ts`, logika u `lib/ai.ts`. Ako ključ nije pos
 
 **Trajanje termina:** svaka usluga ima `durationMinutes` ili `durationDays`. Podrazumevano se bira po delatnosti (`CATEGORY_DURATION` u `app/site-builder.tsx`), a izuzeci su u `PRESET_DURATIONS`. Kalendar prikazuje samo termine u koje usluga stvarno staje; kada usluga traje ceo dan ili više dana, klijent bira samo datum.
 
+## SEO, deljenje i pravne strane
+
+- **OG slika za deljenje:** `app/opengraph-image.tsx` pravi 1200×630 sliku sa brendom. Za svaki objavljen sajt postoji i dinamička slika u `app/s/[slug]/opengraph-image.tsx` (naziv biznisa, delatnost i boja brenda), pa link u Viberu/WhatsApp-u/Instagramu izgleda kao pravi sajt.
+- **Sitemap i robots:** `app/sitemap.ts` automatski uključuje sve objavljene sajtove, `app/robots.ts` dozvoljava indeksiranje javnih strana i blokira `/api/`, `/nalog` i `/auth/`.
+- **Naslovi:** šablon `%s — DiV.ai` važi za platformu, dok sajtovi klijenata koriste apsolutni naslov (`Studio Test Tri — Frizerski salon`), bez imena platforme.
+- **Pravne strane:** `/privatnost` i `/uslovi` (obrađivač podataka, kolačići, pretplata, otkazivanje, odgovornost). Linkovi su u futeru početne strane.
+- **404:** `app/not-found.tsx` vraća pravi status 404 uz linkove za povratak.
+- Font za generisane slike je u `assets/Geist-Regular.ttf` (OFL) i podržava srpsku latinicu.
+
 ## Email obaveštenja
 
 Kada posetilac pošalje upit sa objavljenog sajta, vlasnik dobija email sa imenom, telefonom, uslugom i terminom.
