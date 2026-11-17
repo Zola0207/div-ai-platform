@@ -60,10 +60,12 @@ create table if not exists public.leads (
   preferred_date date,
   preferred_time text,
   status text not null default 'Novo',
+  note text,
   created_at timestamptz not null default now()
 );
 
 alter table public.leads add column if not exists site_id uuid references public.sites(id) on delete set null;
+alter table public.leads add column if not exists note text;
 -- Starije baze (Faza 0) imaju leads bez ovih kolona i sa service NOT NULL.
 alter table public.leads add column if not exists business_name text;
 alter table public.leads add column if not exists preferred_date date;

@@ -139,6 +139,10 @@ Naslovna · O nama · Usluge i cene · Galerija · Cenovnik · Radno vreme · Za
 - ✅ Profil sa planom i statusom pretplate (`profiles`, RLS: samo vlasnik čita)
 - ✅ Sajtovi po korisniku (`sites`), čuvanje na nalog i lista u „Moj nalog“
 - ✅ Razdvajanje podataka: upiti se čitaju samo za sajtove sa naloga
+- ✅ Upravljanje upitima: statusi (Novo / Potvrđeno / Završeno / Otkazano), beleške, filteri i pretraga
+- ✅ Email obaveštenje vlasniku na novi upit (Resend, čeka ključ)
+- ✅ Trajanje termina po usluzi i delatnosti (minuti ili dani)
+- ✅ Logo (upload) ili automatski inicijali, AI slike za naslovnu i galeriju
 - ✅ Ograničenje broja sajtova po planu (trigger u bazi + provera u klijentu)
 - ✅ Stripe checkout po planu (19 / 49 / 149 € + 999 € jednokratno)
 - ✅ Billing portal i webhook koji ažurira plan i status

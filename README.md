@@ -80,6 +80,18 @@ Kada posetilac pošalje upit sa objavljenog sajta, vlasnik dobija email sa imeno
 
 Logika je u `lib/email.ts`, poziva se iz `app/api/leads/route.ts`. Ako ključ nije postavljen, upit se normalno čuva a email se preskače. Slanje je „best effort“ — greška u mejlu nikada ne obara upis upita.
 
+## Upravljanje upitima
+
+Panel **Upiti** (`components/leads-panel.tsx`) daje vlasniku:
+
+- filter po statusu sa brojevima — **Novo / Potvrđeno / Završeno / Otkazano**
+- pretragu po imenu, telefonu, usluzi i belešci
+- promenu statusa direktno u redu (čuva se odmah)
+- belešku do 1000 znakova (npr. „zvala, potvrdila termin“)
+- klik na broj telefona za poziv sa mobilnog
+
+Izmene idu kroz `app/api/leads/[id]/route.ts` (PATCH) i dozvoljene su samo vlasniku sajta na koji je upit vezan. Statusi se čuvaju u koloni `leads.status`, beleške u `leads.note`. Ako baza još nema `note`, status se i dalje čuva, a pokušaj beleške vraća jasnu poruku umesto greške.
+
 ## Objavljivanje sajta
 - Dugme **„Objavi sajt“** u uređivaču postavlja `sites.status = 'published'` i dodeljuje jedinstvenu adresu.
 - Javna strana je `app/s/[slug]/page.tsx` i radi bez prijave, sa SEO meta podacima i JSON-LD.

@@ -6,6 +6,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 import { PLANS, planName, siteLimitForPlan } from '@/lib/plans';
 import type { AiSiteContent } from '@/lib/ai';
 import { SitePreview } from '@/components/site-preview';
+import LeadsPanel, { type LeadItem } from '@/components/leads-panel';
 import type { SiteRecord } from '@/lib/sites';
 import AccountScreen from './account-screen';
 import AuthScreen from './auth-screen';
@@ -92,6 +93,8 @@ type Booking = {
   date: string;
   time: string;
   siteId?: string | null;
+  status: string;
+  note: string;
 };
 
 type LeadRow = {
@@ -102,6 +105,8 @@ type LeadRow = {
   service: string | null;
   preferred_date: string | null;
   preferred_time: string | null;
+  status?: string | null;
+  note?: string | null;
 };
 
 function mapLead(row: LeadRow): Booking {
@@ -113,6 +118,8 @@ function mapLead(row: LeadRow): Booking {
     service: row.service ?? '',
     date: row.preferred_date ?? '',
     time: row.preferred_time ?? '',
+    status: row.status || 'Novo',
+    note: row.note ?? '',
   };
 }
 
@@ -1076,7 +1083,20 @@ function buildCustomDraft(name: string, businessType: string, bookingType: Booki
 function readBookings(): Booking[] {
   try {
     const saved = localStorage.getItem(BOOKINGS_KEY);
-    return saved ? (JSON.parse(saved) as Booking[]) : [];
+    if (!saved) return [];
+    const rows = JSON.parse(saved) as Partial<Booking>[];
+    return rows.map((row) => ({
+      id: String(row.id ?? ''),
+      businessName: row.businessName ?? '',
+      clientName: row.clientName ?? '',
+      phone: row.phone ?? '',
+      service: row.service ?? '',
+      date: row.date ?? '',
+      time: row.time ?? '',
+      siteId: row.siteId ?? null,
+      status: row.status || 'Novo',
+      note: row.note ?? '',
+    }));
   } catch {
     return [];
   }
@@ -1508,6 +1528,8 @@ export default function SiteBuilder() {
       date: String(formData.get('date') ?? ''),
       time: String(formData.get('time') ?? ''),
       siteId: cloudSiteId,
+      status: 'Novo',
+      note: '',
     };
 
     const saveLocally = () => {
@@ -2048,16 +2070,32 @@ export default function SiteBuilder() {
             <div><p className="text-xs font-extrabold uppercase tracking-[0.17em] text-indigo-700">Kontrolna tabla</p><h1 className="mt-2 text-3xl font-black tracking-tight">Upiti za termine</h1><p className="mt-2 text-sm text-slate-500">{user ? 'Zahtevi sa sajtova sačuvanih na vašem nalogu.' : 'Zahtevi poslati kroz formu sajta stižu ovde, iz Supabase baze.'}</p></div>
             <button onClick={() => setScreen('home')} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-slate-50">Napravi sajt</button>
           </div>
-          <div className="mt-7 overflow-hidden rounded-3xl border border-slate-200 bg-white">
-            <div className="grid grid-cols-2 gap-3 border-b border-slate-100 p-5 sm:grid-cols-4">
-              <Stat label="Ukupno upita" value={bookings.length.toString()} />
-              <Stat label="Novi" value={bookings.length.toString()} />
-              <Stat label="Biznisi sa upitima" value={new Set(bookings.map((booking) => booking.businessName)).size.toString()} />
-              <Stat label="Povezivanje" value={configured ? 'Nalog' : 'Demo'} />
-            </div>
-            {bookings.length === 0 ? <div className="px-6 py-16 text-center"><span className="text-4xl">📭</span><h2 className="mt-4 text-lg font-black">Još nema upita</h2><p className="mt-1 text-sm text-slate-500">Pošaljite probni zahtev kroz formu u pregledu sajta.</p><button onClick={() => { setScreen('home'); loadDraft(); }} className="mt-5 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">Otvori sačuvani sajt</button></div> : <div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3">Klijent</th><th className="px-5 py-3">Biznis</th><th className="px-5 py-3">Usluga</th><th className="px-5 py-3">Termin</th><th className="px-5 py-3">Telefon</th></tr></thead><tbody className="divide-y divide-slate-100">{bookings.map((booking) => <tr key={booking.id}><td className="px-5 py-4 font-bold">{booking.clientName}</td><td className="px-5 py-4">{booking.businessName}</td><td className="px-5 py-4">{booking.service}</td><td className="px-5 py-4">{booking.date} · {booking.time}</td><td className="px-5 py-4">{booking.phone}</td></tr>)}</tbody></table></div>}
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat label="Ukupno upita" value={bookings.length.toString()} />
+            <Stat label="Novi" value={bookings.filter((booking) => booking.status === 'Novo').length.toString()} />
+            <Stat label="Potvrđeni" value={bookings.filter((booking) => booking.status === 'Potvrđeno').length.toString()} />
+            <Stat label="Biznisi" value={new Set(bookings.map((booking) => booking.businessName)).size.toString()} />
           </div>
-          <p className="mt-4 text-xs text-slate-400">{user ? 'Prikazuju se samo upiti za sajtove sa vašeg naloga.' : 'Upiti se čuvaju u Supabase bazi. Ako baza nije povezana, prikazuju se podaci iz ovog pregledača.'}</p>
+          <div className="mt-4">
+            <LeadsPanel
+              leads={bookings.map<LeadItem>((booking) => ({
+                id: booking.id,
+                businessName: booking.businessName,
+                clientName: booking.clientName,
+                phone: booking.phone,
+                service: booking.service,
+                date: booking.date,
+                time: booking.time,
+                status: booking.status,
+                note: booking.note,
+              }))}
+              editable={Boolean(user) && configured}
+              onUpdate={(id, patch) => {
+                setBookings((current) => current.map((booking) => (booking.id === id ? { ...booking, ...patch } : booking)));
+              }}
+            />
+          </div>
+          <p className="mt-4 text-xs text-slate-400">{user ? 'Prikazuju se samo upiti za sajtove sa vašeg naloga.' : configured ? 'Prijavite se da biste menjali status i beleške.' : 'Demo režim: upiti se čuvaju u ovom pregledaču.'}</p>
         </div>
       )}
       {customOpen && (
