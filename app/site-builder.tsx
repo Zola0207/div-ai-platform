@@ -7,6 +7,7 @@ import { PLANS, planName, siteLimitForPlan } from '@/lib/plans';
 import type { AiSiteContent } from '@/lib/ai';
 import { SitePreview } from '@/components/site-preview';
 import LeadsPanel, { type LeadItem } from '@/components/leads-panel';
+import AnalyticsPanel from '@/components/analytics-panel';
 import type { SiteRecord } from '@/lib/sites';
 import AccountScreen from './account-screen';
 import AuthScreen from './auth-screen';
@@ -15,7 +16,7 @@ import PricingScreen from './pricing-screen';
 type BookingType = 'appointment' | 'reservation' | 'group' | 'consultation' | 'quote';
 type BlockId = 'hero' | 'about' | 'services' | 'gallery' | 'reviews' | 'faq' | 'hours' | 'booking' | 'map' | 'contact';
 type CategoryId = 'beauty' | 'auto' | 'hospitality' | 'health' | 'fitness' | 'education' | 'home' | 'professional' | 'retail' | 'other';
-type Screen = 'home' | 'editor' | 'bookings' | 'pricing' | 'auth' | 'account';
+type Screen = 'home' | 'editor' | 'bookings' | 'analytics' | 'pricing' | 'auth' | 'account';
 
 type Service = {
   name: string;
@@ -1632,6 +1633,9 @@ export default function SiteBuilder() {
             <button onClick={() => { setScreen('home'); setNotice(''); }} className={`rounded-xl px-3 py-2 transition ${screen === 'home' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>Početna</button>
             <button onClick={() => setScreen('pricing')} className={`rounded-xl px-3 py-2 transition ${screen === 'pricing' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>Cenovnik</button>
             <button onClick={openBookings} className={`rounded-xl px-3 py-2 transition ${screen === 'bookings' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>Upiti</button>
+            {user && (
+              <button onClick={() => setScreen('analytics')} className={`rounded-xl px-3 py-2 transition ${screen === 'analytics' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>Statistika</button>
+            )}
           </nav>
           <div className="flex items-center gap-2">
             {screen === 'editor' && (
@@ -2069,6 +2073,18 @@ export default function SiteBuilder() {
           onEditSite={openCloudSite}
           onSignOut={() => void handleSignOut()}
         />
+      )}
+
+      {screen === 'analytics' && (
+        <div className="mx-auto max-w-5xl px-5 pb-20 pt-12 md:px-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div><p className="text-xs font-extrabold uppercase tracking-[0.17em] text-indigo-700">Kontrolna tabla</p><h1 className="mt-2 text-3xl font-black tracking-tight">Statistika poseta</h1><p className="mt-2 text-sm text-slate-500">Koliko ljudi otvori vaše sajtove i koliko njih ostavi upit.</p></div>
+            <button onClick={openBookings} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-slate-50">Svi upiti</button>
+          </div>
+          <div className="mt-7">
+            <AnalyticsPanel onRequireAuth={() => requireAuth('Prijavite se da vidite statistiku svojih sajtova.', 'analytics')} />
+          </div>
+        </div>
       )}
 
       {screen === 'bookings' && (

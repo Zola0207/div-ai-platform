@@ -70,6 +70,34 @@ Ruta je `app/api/ai/suggest/route.ts`, logika u `lib/ai.ts`. Ako ključ nije pos
 
 **Trajanje termina:** svaka usluga ima `durationMinutes` ili `durationDays`. Podrazumevano se bira po delatnosti (`CATEGORY_DURATION` u `app/site-builder.tsx`), a izuzeci su u `PRESET_DURATIONS`. Kalendar prikazuje samo termine u koje usluga stvarno staje; kada usluga traje ceo dan ili više dana, klijent bira samo datum.
 
+## Statistika poseta
+
+Panel **Statistika** (vidljiv prijavljenim korisnicima) prikazuje posete u poslednjih 30 dana, posete danas i u poslednjih 7 dana, broj upita, konverziju (upiti / posete) i tabelu po sajtu.
+
+- Beleženje: `components/public-site.tsx` šalje **jedan** zahtev po sesiji posetioca na `POST /api/analytics/view`. Čuva se samo `site_id`, putanja, referrer i slučajni ID sesije — **bez IP adrese i bez kolačića**.
+- Prikaz: `GET /api/analytics/summary` (samo prijavljeni vlasnik) čita posete i upite za svoje sajtove i računa dnevne serije i konverziju.
+- Tabela `site_views` je bez RLS politika — upis i čitanje idu isključivo preko serverskih ruta.
+- Dok tabela ne postoji, API vraća nule i panel prikazuje jasnu poruku umesto greške.
+
+Migracija (jednom, u Supabase SQL Editoru):
+
+```sql
+alter table public.leads add column if not exists note text;
+
+create table if not exists public.site_views (
+  id bigserial primary key,
+  site_id uuid references public.sites(id) on delete cascade,
+  path text,
+  referrer text,
+  session_id text,
+  created_at timestamptz not null default now()
+);
+create index if not exists site_views_site_created_idx on public.site_views (site_id, created_at desc);
+alter table public.site_views enable row level security;
+```
+
+Isti SQL je i u `supabase/migrations/2026-11-17-notes-and-analytics.sql`.
+
 ## SEO, deljenje i pravne strane
 
 - **OG slika za deljenje:** `app/opengraph-image.tsx` pravi 1200×630 sliku sa brendom. Za svaki objavljen sajt postoji i dinamička slika u `app/s/[slug]/opengraph-image.tsx` (naziv biznisa, delatnost i boja brenda), pa link u Viberu/WhatsApp-u/Instagramu izgleda kao pravi sajt.

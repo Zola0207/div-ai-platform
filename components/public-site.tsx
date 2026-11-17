@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { SitePreview, type Booking, type SiteDraft } from './site-preview';
 
 export default function PublicSite({
@@ -14,6 +14,40 @@ export default function PublicSite({
 }) {
   const [bookingMessage, setBookingMessage] = useState('');
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
+
+  // Jedna poseta po sesiji po sajtu — bez kolačića i bez ličnih podataka.
+  useEffect(() => {
+    const key = `div-view-${siteId}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+    } catch {
+      // Privatni režim može da blokira sessionStorage — tada samo brojimo.
+    }
+
+    let sessionId = '';
+    try {
+      sessionId = sessionStorage.getItem('div-session-id') ?? '';
+      if (!sessionId) {
+        sessionId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+        sessionStorage.setItem('div-session-id', sessionId);
+      }
+    } catch {
+      sessionId = '';
+    }
+
+    void fetch('/api/analytics/view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+      body: JSON.stringify({
+        siteId,
+        path: window.location.pathname,
+        referrer: document.referrer,
+        sessionId,
+      }),
+    }).catch(() => undefined);
+  }, [siteId]);
 
   const handleBooking = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
