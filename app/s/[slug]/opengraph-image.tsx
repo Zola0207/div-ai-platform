@@ -1,6 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { loadOgFont } from '@/lib/og-font';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { isServerSupabaseConfigured } from '@/lib/api-auth';
 
@@ -42,7 +41,7 @@ async function loadBrand(slug: string) {
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const brand = await loadBrand(slug);
-  const font = await readFile(join(process.cwd(), 'assets/Geist-Regular.ttf'));
+  const font = await loadOgFont();
 
   const accent = brand?.accent ?? '#4f46e5';
   const name = brand?.name ?? 'DiV.ai';
@@ -93,6 +92,6 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         </div>
       </div>
     ),
-    { ...size, fonts: [{ name: 'Geist', data: font, style: 'normal', weight: 400 }] },
+    { ...size, ...(font ? { fonts: [{ name: 'Geist', data: font, style: 'normal' as const, weight: 400 as const }] } : {}) },
   );
 }

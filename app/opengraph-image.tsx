@@ -1,13 +1,12 @@
 import { ImageResponse } from 'next/og';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { loadOgFont } from '@/lib/og-font';
 
 export const alt = 'DiV.ai — web sajtovi i aplikacije za male biznise';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 export default async function Image() {
-  const font = await readFile(join(process.cwd(), 'assets/Geist-Regular.ttf'));
+  const font = await loadOgFont();
 
   return new ImageResponse(
     (
@@ -60,6 +59,6 @@ export default async function Image() {
         </div>
       </div>
     ),
-    { ...size, fonts: [{ name: 'Geist', data: font, style: 'normal', weight: 400 }] },
+    { ...size, ...(font ? { fonts: [{ name: 'Geist', data: font, style: 'normal' as const, weight: 400 as const }] } : {}) },
   );
 }
