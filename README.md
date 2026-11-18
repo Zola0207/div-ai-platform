@@ -167,6 +167,16 @@ Izmene idu kroz `app/api/leads/[id]/route.ts` (PATCH) i dozvoljene su samo vlasn
 - Adresa mora biti jedinstvena na celoj platformi — čuva je indeks `sites_slug_key`, a `app/api/sites/publish/route.ts` rešava sudare dodavanjem sufiksa (`-2`, `-3`…).
 - Upiti poslati sa javne strane vezuju se za sajt preko `site_id` (samo ako je sajt objavljen).
 
+## Instalacija kao aplikacija (PWA)
+
+Svaki objavljen sajt može da se doda na početni ekran telefona i tada se otvara bez adresne trake — sa svojom ikonicom, imenom i bojom, kao aplikacija.
+
+- **Manifest po sajtu:** `app/s/[slug]/manifest.webmanifest/route.ts` vraća ime, kratko ime, opis, akcentnu boju i ikonice iz podataka sajta. Next.js `app/manifest.ts` važi samo za koren, pa sajtovi klijenata dobijaju sopstvenu rutu.
+- **Ikonice bez dizajnera:** `app/s/[slug]/icons/[variant]/route.tsx` generiše 192, 512, maskable 512 i Apple 180 px — inicijali na akcentnoj boji, sa automatski izabranim kontrastom teksta.
+- **Instalacija:** `components/site-app.tsx` registruje service worker i posle nekoliko sekundi nudi karticu „Instaliraj“. Na iOS-u, gde ne postoji `beforeinstallprompt`, prikazuje putanju *Podeli → Dodaj na početni ekran*. Kartica se ne prikazuje na desktopu, u već instaliranoj aplikaciji, ni posle odbijanja (pamti se po sajtu u `localStorage`).
+- **Offline:** `public/s/sw.js` (scope `/s/`) kešira posećene strane i statične fajlove; kad mreže nema, vraća poslednju verziju strane ili generičku `public/offline.html`. Service worker se nikad ne kešira dugo (`next.config.ts`), da ispravke stignu odmah.
+- **Provera:** na telefonu otvoriti objavljen sajt, sačekati karticu i dodati na početni ekran; u DevTools → Application proveriti Manifest, Service Workers i režim „Offline“.
+
 ## Nalozi i naplata
 - Registracija/prijava ide preko Supabase Auth (email + lozinka).
 - Sajt se čuva na nalog klikom na „Sačuvaj na nalog“.

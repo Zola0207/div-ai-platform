@@ -1,8 +1,10 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import { cache } from 'react';
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { isServerSupabaseConfigured } from '@/lib/api-auth';
+import { shortBusinessName } from '@/lib/published-brand';
 import PublicSite from '@/components/public-site';
 import type { Availability, Booking, LayoutId, SiteDraft } from '@/components/blocks/site-types';
 import { LAYOUT_IDS } from '@/components/blocks/site-types';
@@ -139,6 +141,9 @@ async function loadSite(slug: string): Promise<PublishedSite | null> {
   }
 }
 
+// metadata, viewport i sama strana čitaju isti sajt — jedan upit po zahtevu.
+const loadSiteOnce = cache(loadSite);
+
 async function loadBookings(siteId: string): Promise<Booking[]> {
   try {
     const admin = getSupabaseAdmin();
@@ -164,7 +169,7 @@ async function loadBookings(siteId: string): Promise<Booking[]> {
 
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
   const { slug } = await params;
-  const site = await loadSite(slug);
+  const site = await loadSiteOnce(slug);
   const draft = site ? sanitizeDraft(site.draft) : null;
   if (!site || !draft) {
     return { title: 'Sajt nije pronađen — DiV.ai' };
@@ -172,18 +177,35 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 
   const title = draft.businessType ? `${draft.businessName} — ${draft.businessType}` : draft.businessName;
   const description = draft.description || draft.tagline || `${draft.businessName} — kontakt i zakazivanje.`;
+  const base = `/s/${site.slug}`;
 
   return {
     title: { absolute: title },
     description: description.slice(0, 300),
-    alternates: { canonical: `/s/${site.slug}` },
+    applicationName: draft.businessName,
+    // Instalacija sa sajta: manifest i ikonice se generišu iz podataka biznisa.
+    manifest: `${base}/manifest.webmanifest`,
+    appleWebApp: {
+      capable: true,
+      title: shortBusinessName(draft.businessName),
+      statusBarStyle: 'default',
+    },
+    icons: {
+      icon: [
+        { url: `${base}/icons/192`, sizes: '192x192', type: 'image/png' },
+        { url: `${base}/icons/512`, sizes: '512x512', type: 'image/png' },
+      ],
+      apple: [{ url: `${base}/icons/apple-180`, sizes: '180x180', type: 'image/png' }],
+      shortcut: [`${base}/icons/192`],
+    },
+    alternates: { canonical: base },
     openGraph: {
       title,
       description: description.slice(0, 300),
       type: 'website',
       locale: 'sr_RS',
       siteName: draft.businessName,
-      url: `/s/${site.slug}`,
+      url: base,
     },
     twitter: {
       card: 'summary_large_image',
@@ -193,12 +215,20 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   };
 }
 
+// Boja adresne trake na telefonu prati akcent sajta.
+export async function generateViewport({ params }: PageParams): Promise<Viewport> {
+  const { slug } = await params;
+  const site = await loadSiteOnce(slug);
+  const draft = site ? sanitizeDraft(site.draft) : null;
+  return { themeColor: draft?.accentColor ?? '#4f46e5' };
+}
+
 export const dynamic = 'force-dynamic';
 
 export default async function PublishedSitePage({ params }: PageParams) {
   await connection();
   const { slug } = await params;
-  const site = await loadSite(slug);
+  const site = await loadSiteOnce(slug);
   if (!site) notFound();
 
   const draft = sanitizeDraft(site.draft);
@@ -223,7 +253,7 @@ export default async function PublishedSitePage({ params }: PageParams) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <PublicSite draft={draft} siteId={site.id} initialBookings={bookings} />
+      <PublicSite draft={draft} siteId={site.id} slug={site.slug} initialBookings={bookings} />
     </>
   );
 }

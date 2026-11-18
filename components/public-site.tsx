@@ -2,14 +2,17 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { SitePreview, type Booking, type SiteDraft } from './site-preview';
+import SiteApp from './site-app';
 
 export default function PublicSite({
   draft,
   siteId,
+  slug,
   initialBookings,
 }: {
   draft: SiteDraft;
   siteId: string;
+  slug: string;
   initialBookings: Booking[];
 }) {
   const [bookingMessage, setBookingMessage] = useState('');
@@ -89,12 +92,15 @@ export default function PublicSite({
   };
 
   return (
-    <SitePreview
-      draft={draft}
-      onBooking={handleBooking}
-      bookingMessage={bookingMessage}
-      bookings={bookings}
-      variant="page"
-    />
+    <>
+      <SitePreview
+        draft={draft}
+        onBooking={handleBooking}
+        bookingMessage={bookingMessage}
+        bookings={bookings}
+        variant="page"
+      />
+      <SiteApp slug={slug} name={draft.businessName} accent={draft.accentColor} />
+    </>
   );
 }

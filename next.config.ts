@@ -12,7 +12,20 @@ const nextConfig: NextConfig = {
   // uključujemo u serverless bundle.
   outputFileTracingIncludes: {
     '/s/[slug]/opengraph-image': ['./assets/Geist-Regular.ttf'],
+    '/s/[slug]/icons/[variant]': ['./assets/Geist-Regular.ttf'],
     '/opengraph-image': ['./assets/Geist-Regular.ttf'],
+  },
+  // Service worker se nikad ne kešira dugo — inače ispravka ne stiže do korisnika.
+  async headers() {
+    return [
+      {
+        source: '/s/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' },
+          { key: 'Service-Worker-Allowed', value: '/s/' },
+        ],
+      },
+    ];
   },
 };
 

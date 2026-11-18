@@ -152,10 +152,13 @@ Naslovna · O nama · Usluge i cene · Galerija · Cenovnik · Radno vreme · Za
 - ✅ Objava sajta na javnu adresu `/s/<slug>` (bez prijave, sa SEO meta i JSON-LD)
 - ⬜ Live test plaćanja (čeka prave Stripe ključeve i `STRIPE_WEBHOOK_SECRET`)
 
-### Faza 4 — Mobilna aplikacija (premium)
-- Počni kao PWA (sajt koji se instalira kao app)
-- Zatim prava nativna objava (Apple + Google)
-- Push obaveštenja
+### Faza 4 — Mobilna aplikacija (premium) — 🟡 PWA urađen
+- ✅ Manifest po sajtu (ime, opis, akcentna boja, `start_url`)
+- ✅ Ikonice iz imena i boje: 192, 512, maskable i Apple 180 (bez uploada)
+- ✅ „Dodaj na početni ekran“ na telefonu (iOS uputstvo, Android prompt)
+- ✅ Service worker: keširane strane i statični fajlovi, offline strana
+- ⬜ Push obaveštenja (podsetnik na termin)
+- ⬜ Prava nativna objava (Apple + Google)
 
 ### Faza 5 — Rast
 - Višejezičnost, analitika, automatski izveštaji klijentima
