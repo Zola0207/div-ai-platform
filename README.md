@@ -105,6 +105,26 @@ alter table public.site_views enable row level security;
 
 Isti SQL je i u `supabase/migrations/2026-11-17-notes-and-analytics.sql`.
 
+## Dizajni sajtova (layouti)
+
+Šablon ne određuje samo boju — određuje i **dizajn**. U nacrtu se čuva polje `layoutId`, a `components/site-preview.tsx` samo bira koji renderer crta stranu.
+
+| `layoutId` | Ideja | Koriste ga |
+|---|---|---|
+| `classic` | čisto, centrirano, kartice sa senkom | većina šablona |
+| `editorial` | serif naslovi, hairline linije, numerisane sekcije, bez kartica | advokat, knjigovodstvo, nekretnine, marketing, psihoterapija, škola jezika, instrukcije, IT akademija, muzička škola |
+| `bold` | puna boja preko heroja, krupna velika slova, oštri uglovi, tamne sekcije | teretana, personalni trener, borilački klub, plesna škola, joga, tetovaža |
+
+Svi ostali šabloni (i „Druga delatnost“) koriste `classic` dok se dizajn ne promeni u uređivaču.
+
+- **Bez migracije baze:** `layoutId` živi u `sites.draft` (JSONB). Nacrti bez polja dobijaju `classic`, pa objavljeni sajtovi izgledaju identično kao pre.
+- **Katalog:** kartica šablona crta minijaturu svog dizajna i bedž („Editorial dizajn“), pa se razlika vidi već u galeriji.
+- **Uređivač:** kartica „Dizajn sajta“ menja raspored i tipografiju, ali ne dira tekstove, usluge ni termine.
+- **Kontrast:** `contrastText()` bira taman/svetan tekst na akcentnoj boji, a `accentOnDark()` posvetljuje tamne akcente za tekst na tamnim sekcijama (npr. cene u Bold dizajnu).
+- **Novi dizajn:** napraviti `components/layouts/<ime>.tsx` koji prima `LayoutProps`, dodati ID u `LAYOUT_IDS`/`LAYOUTS` (`components/blocks/site-types.ts`) i granu u `site-preview.tsx`.
+
+Booking logika je izdvojena u `components/blocks/booking-form.tsx` i ima tri teme (`light`, `flat`, `dark`), da se kalendar ne duplira po dizajnu.
+
 ## SEO, deljenje i pravne strane
 
 - **OG slika za deljenje:** `app/opengraph-image.tsx` pravi 1200×630 sliku sa brendom. Za svaki objavljen sajt postoji i dinamička slika u `app/s/[slug]/opengraph-image.tsx` (naziv biznisa, delatnost i boja brenda), pa link u Viberu/WhatsApp-u/Instagramu izgleda kao pravi sajt.

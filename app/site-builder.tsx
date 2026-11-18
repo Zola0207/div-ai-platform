@@ -5,7 +5,7 @@ import { useAuth } from '@/components/auth-provider';
 import { getSupabaseClient } from '@/lib/supabase';
 import { PLANS, planName, siteLimitForPlan } from '@/lib/plans';
 import type { AiSiteContent } from '@/lib/ai';
-import { SitePreview } from '@/components/site-preview';
+import { SitePreview, LAYOUTS, type LayoutId } from '@/components/site-preview';
 import LeadsPanel, { type LeadItem } from '@/components/leads-panel';
 import AnalyticsPanel from '@/components/analytics-panel';
 import type { SiteRecord } from '@/lib/sites';
@@ -77,6 +77,7 @@ type SiteDraft = {
     sunday: string;
   };
   accentColor: string;
+  layoutId?: LayoutId;
   services: Service[];
   reviews: Review[];
   faq: Faq[];
@@ -265,6 +266,7 @@ type PresetSeed = {
   address: string;
   accentColor: string;
   bookingType: BookingType;
+  layout?: LayoutId;
   services: Service[];
   reviews?: Review[];
   faq?: Faq[];
@@ -403,6 +405,7 @@ const basePresets: PresetSeed[] = [
   // — Sport i fitnes —
   {
     id: 'gym', name: 'Teretana', categoryId: 'fitness', icon: '💪',
+    layout: 'bold',
     businessName: 'Iron Gym', slug: 'iron-gym',
     tagline: 'Snaga. Disciplina. Rezultat.',
     description: 'Moderni sprave, grupni treninzi i stručno vođenje za svaki nivo spremnosti.',
@@ -416,6 +419,7 @@ const basePresets: PresetSeed[] = [
   },
   {
     id: 'pt', name: 'Personalni trener', categoryId: 'fitness', icon: '🏋️',
+    layout: 'bold',
     businessName: 'Trener Nikola', slug: 'trener-nikola',
     tagline: 'Vaš plan. Vaš tempo. Vaši rezultati.',
     description: 'Individualni treninzi prilagođeni vašim ciljevima, na terenu ili online.',
@@ -430,6 +434,7 @@ const basePresets: PresetSeed[] = [
   // — Edukacija —
   {
     id: 'language', name: 'Škola jezika', categoryId: 'education', icon: '📚',
+    layout: 'editorial',
     businessName: 'Lingua Centar', slug: 'lingua-centar',
     tagline: 'Novi jezik, nove mogućnosti.',
     description: 'Kursevi stranih jezika za sve uzraste i nivoe, u malim grupama i sa sertifikovanim predavačima.',
@@ -471,6 +476,7 @@ const basePresets: PresetSeed[] = [
   // — Profesionalne usluge —
   {
     id: 'accounting', name: 'Knjigovodstvena agencija', categoryId: 'professional', icon: '💼',
+    layout: 'editorial',
     businessName: 'Biro Knjigovodstvo', slug: 'biro-knjigovodstvo',
     tagline: 'Vaše finansije, naš posao.',
     description: 'Vođenje knjiga, obračun zarada i poresko savetovanje za preduzetnike i firme.',
@@ -510,6 +516,7 @@ type CompactPreset = {
   description: string;
   color: string;
   booking: BookingType;
+  layout?: LayoutId;
   services: [string, string, string][];
 };
 
@@ -528,6 +535,7 @@ function compactPreset(input: CompactPreset): PresetSeed {
     address: 'Beograd, Srbija',
     accentColor: input.color,
     bookingType: input.booking,
+    layout: input.layout,
     services: input.services.map(([name, description, price]) => ({ name, description, price })),
   };
 }
@@ -572,6 +580,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'tattoo', name: 'Tetovaža i pirsing', category: 'beauty', icon: '🖋️',
+    layout: 'bold',
     businessName: 'Ink Studio', slug: 'ink-studio',
     tagline: 'Umretnost na koži.',
     description: 'Autorske tetovaže i pirsing, uz stroge higijenske standarde i konsultaciju pre svake izrade.',
@@ -683,6 +692,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'psychology', name: 'Psihoterapija', category: 'health', icon: '🧠',
+    layout: 'editorial',
     businessName: 'Psihoterapija Centar', slug: 'psihoterapija-centar',
     tagline: 'Prostor za razgovor.',
     description: 'Individualna i bračna psihoterapija, u ordinaciji ili online, uz punu diskreciju.',
@@ -708,6 +718,7 @@ const extraPresets: PresetSeed[] = [
   // — Sport i fitnes —
   compactPreset({
     id: 'yoga', name: 'Joga studio', category: 'fitness', icon: '🧘',
+    layout: 'bold',
     businessName: 'Yoga Space', slug: 'yoga-space',
     tagline: 'Disanje, pokret, mir.',
     description: 'Joga za sve nivoe, u malim grupama i uz posvećene instruktore.',
@@ -720,6 +731,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'dance', name: 'Plesna škola', category: 'fitness', icon: '💃',
+    layout: 'bold',
     businessName: 'Dance Studio', slug: 'dance-studio',
     tagline: 'Ples je najbolja zabava.',
     description: 'Grupni i individualni časovi plesa za decu i odrasle, bez obzira na iskustvo.',
@@ -732,6 +744,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'martial', name: 'Borilački klub', category: 'fitness', icon: '🥊',
+    layout: 'bold',
     businessName: 'Fight Club', slug: 'fight-club',
     tagline: 'Snaga i disciplina.',
     description: 'Treninzi za decu i odrasle, od rekreativnog vežbanja do takmičarske pripreme.',
@@ -745,6 +758,7 @@ const extraPresets: PresetSeed[] = [
   // — Edukacija —
   compactPreset({
     id: 'music-school', name: 'Muzička škola', category: 'education', icon: '🎹',
+    layout: 'editorial',
     businessName: 'Muzička Škola Note', slug: 'muzicka-skola-note',
     tagline: 'Prvi akord je najvažniji.',
     description: 'Individualna nastava klavira, gitare i pevanja za decu i odrasle.',
@@ -757,6 +771,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'tutoring', name: 'Instrukcije', category: 'education', icon: '📖',
+    layout: 'editorial',
     businessName: 'Instrukcije Plus', slug: 'instrukcije-plus',
     tagline: 'Gradivo koje konačno legne.',
     description: 'Individualne instrukcije i priprema za prijemne ispite, uživo ili online.',
@@ -769,6 +784,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'it-academy', name: 'IT akademija', category: 'education', icon: '💻',
+    layout: 'editorial',
     businessName: 'Code Academy', slug: 'code-academy',
     tagline: 'Od nule do prvog posla.',
     description: 'Praktični kursevi programiranja i dizajna, u malim grupama i uz mentore iz industrije.',
@@ -855,6 +871,7 @@ const extraPresets: PresetSeed[] = [
   // — Profesionalne usluge —
   compactPreset({
     id: 'lawyer', name: 'Advokat', category: 'professional', icon: '⚖️',
+    layout: 'editorial',
     businessName: 'Advokatska Kancelarija', slug: 'advokatska-kancelarija',
     tagline: 'Pravna sigurnost.',
     description: 'Pravno savetovanje i zastupanje u građanskim i privrednim predmetima.',
@@ -867,6 +884,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'realestate', name: 'Nekretnine', category: 'professional', icon: '🏢',
+    layout: 'editorial',
     businessName: 'Agencija Nekretnina', slug: 'agencija-nekretnina',
     tagline: 'Prava adresa, bez lutanja.',
     description: 'Posredovanje u prodaji i kupovini stanova, kuća i poslovnih prostora.',
@@ -879,6 +897,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'marketing', name: 'Marketing agencija', category: 'professional', icon: '📈',
+    layout: 'editorial',
     businessName: 'Digital Studio', slug: 'digital-studio',
     tagline: 'Vidljivost koja donosi klijente.',
     description: 'Strategija, društvene mreže i plaćeni oglasi za male i srednje biznise.',
@@ -1025,6 +1044,7 @@ function buildDraft(seed: PresetSeed): SiteDraft {
     address: seed.address,
     hours: seed.hours ?? DEFAULT_HOURS,
     accentColor: seed.accentColor,
+    layoutId: seed.layout ?? 'classic',
     services,
     availability: cloneAvailability(seed.availability ?? DEFAULT_AVAILABILITY),
     reviews: seed.reviews ?? [
@@ -1134,6 +1154,7 @@ function normalizeDraft(parsed: Partial<SiteDraft>): SiteDraft | null {
     ...parsed,
     categoryId: parsed.categoryId ?? base.categoryId,
     bookingType: parsed.bookingType ?? base.bookingType,
+    layoutId: parsed.layoutId ?? base.layoutId ?? 'classic',
     icon: parsed.icon ?? base.icon,
     hours: parsed.hours ?? base.hours,
     reviews: parsed.reviews ?? base.reviews,
@@ -1774,6 +1795,7 @@ export default function SiteBuilder() {
                     icon={preset.icon}
                     preview={preset.businessName}
                     bookingType={bookingTypes.find((type) => type.id === preset.bookingType)?.label ?? ''}
+                    layout={preset.layoutId}
                     onChoose={() => openTemplate(preset.templateId)}
                   />
                 );
@@ -1870,6 +1892,30 @@ export default function SiteBuilder() {
                   </div>
                 </div>
                 <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Demo adresa</p><p className="mt-1 text-sm font-semibold text-indigo-700">{draft.slug}.div.ai</p></div>
+              </EditorCard>
+
+              <EditorCard title="Dizajn sajta" subtitle="Isti tekst, potpuno drugačiji izgled.">
+                <div className="space-y-2">
+                  {LAYOUTS.map((layout) => {
+                    const active = (draft.layoutId ?? 'classic') === layout.id;
+                    return (
+                      <button
+                        key={layout.id}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => updateDraft('layoutId', layout.id)}
+                        className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left transition ${active ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'}`}
+                      >
+                        <span className="min-w-0">
+                          <span className="block text-xs font-bold text-slate-800">{layout.label}</span>
+                          <span className="mt-0.5 block text-[10px] leading-4 text-slate-500">{layout.note}</span>
+                        </span>
+                        <span className={`h-3 w-3 shrink-0 rounded-full border ${active ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'}`} aria-hidden="true" />
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] leading-4 text-slate-400">Dizajn menja raspored i tipografiju, ali ne dira tekstove, usluge ni termine.</p>
               </EditorCard>
 
               <EditorCard title="AI asistent" subtitle="Popunite tekstove na osnovu naziva i delatnosti.">
@@ -2224,16 +2270,50 @@ function presetName(templateId: string): string {
   return seed?.name ?? 'Šablon';
 }
 
-function TemplateCard({ eyebrow, title, description, color, icon, preview, bookingType, onChoose }: { eyebrow: string; title: string; description: string; color: string; icon: string; preview: string; bookingType: string; onChoose: () => void }) {
+function TemplateCard({ eyebrow, title, description, color, icon, preview, bookingType, layout = 'classic', onChoose }: { eyebrow: string; title: string; description: string; color: string; icon: string; preview: string; bookingType: string; layout?: LayoutId; onChoose: () => void }) {
+  const layoutLabel = LAYOUTS.find((item) => item.id === layout)?.label ?? 'Klasičan';
   return <article className="group flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-xl">
-    <div className="relative h-40 overflow-hidden p-5" style={{ background: `linear-gradient(135deg, ${color}18, #ffffff 80%)` }}>
+    <div className="relative h-40 overflow-hidden p-5" style={{ background: layout === 'bold' ? color : `linear-gradient(135deg, ${color}18, #ffffff 80%)` }}>
+      {layout === 'bold' ? (
+        <div className="relative flex h-full flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/80">{preview}</span>
+            <span className="h-4 w-4 bg-slate-950" />
+          </div>
+          <div className="space-y-1.5">
+            <span className="block h-3 w-4/5 bg-white/90" />
+            <span className="block h-3 w-3/5 bg-white/60" />
+          </div>
+          <div className="grid grid-cols-3 gap-2 border-t border-white/25 pt-2">
+            <span className="h-1.5 bg-white/50" /><span className="h-1.5 bg-white/30" /><span className="h-1.5 bg-white/30" />
+          </div>
+        </div>
+      ) : layout === 'editorial' ? (
+        <div className="relative mx-auto flex h-full max-w-[270px] flex-col border border-slate-200 bg-white px-4 py-3">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
+            <span className="font-serif text-[9px] tracking-tight text-slate-800">{preview}</span>
+            <span className="text-[6px] uppercase tracking-[0.22em] text-slate-400">{eyebrow}</span>
+          </div>
+          <div className="mt-3 space-y-1.5">
+            <span className="block h-2 w-20" style={{ backgroundColor: color }} />
+            <span className="block h-3 w-full bg-slate-300" />
+            <span className="block h-3 w-2/3 bg-slate-300" />
+          </div>
+          <div className="mt-auto space-y-1.5 border-t border-slate-200 pt-2">
+            <span className="block h-1.5 w-full bg-slate-100" />
+            <span className="block h-1.5 w-full bg-slate-100" />
+            <span className="block h-1.5 w-3/4 bg-slate-100" />
+          </div>
+        </div>
+      ) : (<>
       <div className="absolute -right-6 -top-12 h-48 w-48 rounded-full opacity-20 blur-3xl" style={{ backgroundColor: color }} />
       <div className="relative mx-auto max-w-[260px] rounded-2xl border border-white bg-white/90 p-4 shadow-lg">
         <div className="flex items-center justify-between border-b border-slate-100 pb-2"><span className="text-[10px] font-black">{preview}</span><span className="text-[8px] text-slate-400">Početna　 Usluge　 Kontakt</span></div>
         <div className="py-4 text-center"><span className="text-xl">{icon}</span><div className="mx-auto mt-3 h-1 w-12 rounded-full" style={{ backgroundColor: color }} /></div>
         <div className="grid grid-cols-3 gap-2"><span className="h-8 rounded-lg bg-slate-100"/><span className="h-8 rounded-lg bg-slate-100"/><span className="h-8 rounded-lg bg-slate-100"/></div>
       </div>
-      <span className="absolute bottom-3 right-4 rounded-full bg-white px-3 py-1 text-[10px] font-bold text-slate-500 shadow-sm">Spreman šablon</span>
+      </>)}
+      <span className="absolute bottom-3 right-4 rounded-full bg-white px-3 py-1 text-[10px] font-bold text-slate-500 shadow-sm">{layoutLabel} dizajn</span>
     </div>
     <div className="flex flex-1 flex-col p-5">
       <p className="text-[10px] font-extrabold uppercase tracking-[0.17em]" style={{ color }}>{eyebrow}</p>

@@ -4,7 +4,8 @@ import { connection } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { isServerSupabaseConfigured } from '@/lib/api-auth';
 import PublicSite from '@/components/public-site';
-import type { Availability, Booking, SiteDraft } from '@/components/site-preview';
+import type { Availability, Booking, LayoutId, SiteDraft } from '@/components/blocks/site-types';
+import { LAYOUT_IDS } from '@/components/blocks/site-types';
 
 const BLOCK_IDS = ['hero', 'about', 'services', 'gallery', 'reviews', 'faq', 'hours', 'booking', 'map', 'contact'] as const;
 const DEFAULT_BLOCKS: SiteDraft['visibleBlocks'] = ['hero', 'about', 'services', 'gallery', 'reviews', 'faq', 'hours', 'booking', 'contact'];
@@ -82,6 +83,7 @@ function sanitizeDraft(raw: unknown): SiteDraft | null {
       sunday: text(hours.sunday, 'Zatvoreno'),
     },
     accentColor: /^#[0-9a-f]{6}$/i.test(accent) ? accent : '#4f46e5',
+    layoutId: LAYOUT_IDS.includes(data.layoutId as LayoutId) ? (data.layoutId as LayoutId) : 'classic',
     services: records(data.services)
       .map((service) => ({
         name: text(service.name),
