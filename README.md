@@ -111,19 +111,23 @@ Isti SQL je i u `supabase/migrations/2026-11-17-notes-and-analytics.sql`.
 
 | `layoutId` | Ideja | Koriste ga |
 |---|---|---|
-| `classic` | čisto, centrirano, kartice sa senkom | većina šablona |
+| `classic` | čisto, centrirano, kartice sa senkom | frizerski salon (javni demo), vrtić, „Druga delatnost“ |
 | `editorial` | serif naslovi, hairline linije, numerisane sekcije, bez kartica | advokat, knjigovodstvo, nekretnine, marketing, psihoterapija, škola jezika, instrukcije, IT akademija, muzička škola |
 | `bold` | puna boja preko heroja, krupna velika slova, oštri uglovi, tamne sekcije | teretana, personalni trener, borilački klub, plesna škola, joga, tetovaža |
+| `premium` | tamna pozadina, zlatne linije, serif jelovnik sa tačkastim vođicama | restoran, kafić, hotel, ketering, picerija |
+| `portfolio` | galerija je prva, tekst je tih i mali, cene u kompaktnim redovima | manikir, foto studio, nakit, cveće, garderoba, knjižara |
+| `utility` | gusto i telefonski: poziv u zaglavlju, cenovnik u tabeli, traka za poziv na mobilnom | vodoinstalater, električar, moler, čišćenje, klima, stolarija, selidbe, autoservis, perionica, gume, rent-a-car, šlep |
+| `booking` | kalendar je u herou, odmah uz naslov; koraci i cene ispod | kozmetički studio, zubar, fizioterapija, masaža, veterinar, nutricionista, trepavice, frizer za pse |
 
 Svi ostali šabloni (i „Druga delatnost“) koriste `classic` dok se dizajn ne promeni u uređivaču.
 
 - **Bez migracije baze:** `layoutId` živi u `sites.draft` (JSONB). Nacrti bez polja dobijaju `classic`, pa objavljeni sajtovi izgledaju identično kao pre.
-- **Katalog:** kartica šablona crta minijaturu svog dizajna i bedž („Editorial dizajn“), pa se razlika vidi već u galeriji.
+- **Katalog:** kartica šablona crta minijaturu svog dizajna i bedž („Editorial dizajn“, „Premium dizajn“…), pa se razlika vidi već u galeriji.
 - **Uređivač:** kartica „Dizajn sajta“ menja raspored i tipografiju, ali ne dira tekstove, usluge ni termine.
-- **Kontrast:** `contrastText()` bira taman/svetan tekst na akcentnoj boji, a `accentOnDark()` posvetljuje tamne akcente za tekst na tamnim sekcijama (npr. cene u Bold dizajnu).
+- **Kontrast:** `contrastText()` bira taman/svetan tekst na akcentnoj boji, a `accentOnDark()` posvetljuje tamne akcente za tekst na tamnim sekcijama (npr. cene u Bold i Premium dizajnu).
 - **Novi dizajn:** napraviti `components/layouts/<ime>.tsx` koji prima `LayoutProps`, dodati ID u `LAYOUT_IDS`/`LAYOUTS` (`components/blocks/site-types.ts`) i granu u `site-preview.tsx`.
 
-Booking logika je izdvojena u `components/blocks/booking-form.tsx` i ima tri teme (`light`, `flat`, `dark`), da se kalendar ne duplira po dizajnu.
+Booking logika je izdvojena u `components/blocks/booking-form.tsx` i ima tri teme (`light`, `flat`, `dark`), da se kalendar ne duplira po dizajnu. `Servis` i `Termin` dodatno koriste gust raspored: `Termin` stavlja formu u hero (jedan `#site-booking` na strani), a `Servis` lepljivu traku i traku za poziv prikazuje samo na objavljenoj strani (`variant === 'page'`), da ne prekrivaju uređivač.
 
 ## SEO, deljenje i pravne strane
 

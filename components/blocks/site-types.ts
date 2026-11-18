@@ -4,7 +4,7 @@ export type BookingType = 'appointment' | 'reservation' | 'group' | 'consultatio
 export type BlockId = 'hero' | 'about' | 'services' | 'gallery' | 'reviews' | 'faq' | 'hours' | 'booking' | 'map' | 'contact';
 
 // Dizajn sajta. Nije isto što i boja — menja raspored, tipografiju i oblike.
-export type LayoutId = 'classic' | 'editorial' | 'bold';
+export type LayoutId = 'classic' | 'editorial' | 'bold' | 'premium' | 'portfolio' | 'utility' | 'booking';
 
 export type Service = {
   name: string;
@@ -73,12 +73,16 @@ export type LayoutProps = {
 
 export const DEFAULT_LAYOUT: LayoutId = 'classic';
 
-export const LAYOUT_IDS: LayoutId[] = ['classic', 'editorial', 'bold'];
+export const LAYOUT_IDS: LayoutId[] = ['classic', 'editorial', 'bold', 'premium', 'portfolio', 'utility', 'booking'];
 
 export const LAYOUTS: { id: LayoutId; label: string; note: string }[] = [
   { id: 'classic', label: 'Klasičan', note: 'Čisto i pregledno, sa karticama' },
   { id: 'editorial', label: 'Editorial', note: 'Serif naslovi i tanke linije' },
   { id: 'bold', label: 'Bold', note: 'Jaka boja, krupna slova, oštri uglovi' },
+  { id: 'premium', label: 'Premium', note: 'Tamna pozadina i zlatne linije' },
+  { id: 'portfolio', label: 'Portfolio', note: 'Galerija je glavna, tekst je tih' },
+  { id: 'utility', label: 'Servis', note: 'Cenovnik i telefonski poziv odmah' },
+  { id: 'booking', label: 'Termin', note: 'Kalendar je prvi, odmah uz naslov' },
 ];
 
 export function layoutOf(draft: { layoutId?: LayoutId }): LayoutId {

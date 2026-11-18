@@ -294,6 +294,7 @@ const basePresets: PresetSeed[] = [
   },
   {
     id: 'beauty-salon', name: 'Kozmetički studio', categoryId: 'beauty', icon: '💅',
+    layout: 'booking',
     businessName: 'Glow Studio', slug: 'glow-studio',
     tagline: 'Nega koja se vidi i oseća.',
     description: 'Profesionalna nega lica i tela u opuštajućem ambijentu, sa posvećenošću svakom klijentu.',
@@ -308,6 +309,7 @@ const basePresets: PresetSeed[] = [
   // — Auto i moto —
   {
     id: 'mechanic', name: 'Auto servis', categoryId: 'auto', icon: '🔧',
+    layout: 'utility',
     businessName: 'Auto servis Jovanović', slug: 'auto-servis-jovanovic',
     tagline: 'Pouzdana usluga. Siguran put.',
     description: 'Vaš automobil je u sigurnim rukama. Radimo dijagnostiku, redovno održavanje i popravke uz jasnu procenu.',
@@ -321,6 +323,7 @@ const basePresets: PresetSeed[] = [
   },
   {
     id: 'car-wash', name: 'Autopraonica', categoryId: 'auto', icon: '🚗',
+    layout: 'utility',
     businessName: 'Shine Auto Spa', slug: 'shine-auto-spa',
     tagline: 'Sjaj koji traje.',
     description: 'Temeljno pranje i detaljno čišćenje vozila, od spoljašnjeg sjaja do unutrašnjosti.',
@@ -335,6 +338,7 @@ const basePresets: PresetSeed[] = [
   // — Ugostiteljstvo —
   {
     id: 'restaurant', name: 'Restoran', categoryId: 'hospitality', icon: '🍽️',
+    layout: 'premium',
     businessName: 'Restoran Kod Marka', slug: 'restoran-kod-marka',
     tagline: 'Ukusi koje pamte.',
     description: 'Domaća kuhinja od svežih namirnica i ljubazna usluga, u srcu grada. Rezervišite sto i uživajte.',
@@ -364,6 +368,7 @@ const basePresets: PresetSeed[] = [
   },
   {
     id: 'cafe', name: 'Kafić / pekara', categoryId: 'hospitality', icon: '☕',
+    layout: 'premium',
     businessName: 'Kafeterija Kutak', slug: 'kafeterija-kutak',
     tagline: 'Vaš omiljeni kutak za kafu.',
     description: 'Kvalitetna kafa, sveže pecivo i prijatna atmosfera za posao ili druženje.',
@@ -378,6 +383,7 @@ const basePresets: PresetSeed[] = [
   // — Zdravlje —
   {
     id: 'dentist', name: 'Stomatološka ordinacija', categoryId: 'health', icon: '🦷',
+    layout: 'booking',
     businessName: 'Dental Care', slug: 'dental-care',
     tagline: 'Zdrav osmeh, bez bola.',
     description: 'Moderna ordinacija sa posvećenim timom i najnovijom opremom za celu porodicu.',
@@ -391,6 +397,7 @@ const basePresets: PresetSeed[] = [
   },
   {
     id: 'physio', name: 'Fizioterapeut', categoryId: 'health', icon: '🩺',
+    layout: 'booking',
     businessName: 'Fizio Centar', slug: 'fizio-centar',
     tagline: 'Pokrenite telo ponovo.',
     description: 'Individualna terapija i vežbe za oporavak, oslobađanje od bola i bolju pokretljivost.',
@@ -449,6 +456,7 @@ const basePresets: PresetSeed[] = [
   // — Usluge u kući —
   {
     id: 'painter', name: 'Molerske usluge', categoryId: 'home', icon: '🖌️',
+    layout: 'utility',
     businessName: 'Moler Pera', slug: 'moler-pera',
     tagline: 'Zidovi koji menjaju prostor.',
     description: 'Krečenje, gletovanje i moleraj stanova i poslovnih prostora, uz uredan rad i fer cenu.',
@@ -462,6 +470,7 @@ const basePresets: PresetSeed[] = [
   },
   {
     id: 'electrician', name: 'Električar', categoryId: 'home', icon: '💡',
+    layout: 'utility',
     businessName: 'Elektro Tim', slug: 'elektro-tim',
     tagline: 'Sigurna struja, bez brige.',
     description: 'Hitne intervencije, instalacije i popravke uz licenciran tim i garanciju na rad.',
@@ -491,6 +500,7 @@ const basePresets: PresetSeed[] = [
   // — Prodavnice i zanat —
   {
     id: 'florist', name: 'Cvećara', categoryId: 'retail', icon: '💐',
+    layout: 'portfolio',
     businessName: 'Cvećara Iris', slug: 'cvecara-iris',
     tagline: 'Cveće za svaku priliku.',
     description: 'Sveže cveće, buketi po meri i dostava na teritoriji grada istog dana.',
@@ -544,6 +554,7 @@ const extraPresets: PresetSeed[] = [
   // — Lepota i nega —
   compactPreset({
     id: 'nails', name: 'Manikir i pedikir', category: 'beauty', icon: '💅',
+    layout: 'portfolio',
     businessName: 'Nokti Studio', slug: 'nokti-studio',
     tagline: 'Uredni nokti, svakog dana.',
     description: 'Manikir, pedikir i gel lak u prijatnom ambijentu, uz pažljivu negu i sterilne alate.',
@@ -556,6 +567,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'lashes', name: 'Trepavice i obrve', category: 'beauty', icon: '👁️',
+    layout: 'booking',
     businessName: 'Lash Room', slug: 'lash-room',
     tagline: 'Pogled koji govori.',
     description: 'Nadogradnja trepavica i oblikovanje obrva prilagođeno vašem licu i stilu.',
@@ -568,6 +580,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'massage', name: 'Masaža i relax', category: 'beauty', icon: '🌿',
+    layout: 'booking',
     businessName: 'Relax Centar', slug: 'relax-centar',
     tagline: 'Predah koji vam treba.',
     description: 'Terapeutske i relaks masaže koje otklanjaju napetost i vraćaju energiju.',
@@ -593,6 +606,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'pet-grooming', name: 'Frizer za pse', category: 'beauty', icon: '🐕',
+    layout: 'booking',
     businessName: 'Pet Grooming', slug: 'pet-grooming',
     tagline: 'Srećan pas, uredna dlaka.',
     description: 'Kupanje, šišanje i nega dlake za pse svih rasa, uz puno strpljenja i ljubavi.',
@@ -606,6 +620,7 @@ const extraPresets: PresetSeed[] = [
   // — Auto i moto —
   compactPreset({
     id: 'tire', name: 'Vulkanizer', category: 'auto', icon: '🛞',
+    layout: 'utility',
     businessName: 'Tire Pro', slug: 'tire-pro',
     tagline: 'Siguran oslonac na putu.',
     description: 'Zamena guma, balansiranje i vulkanizacija, brzo i uz proveru pritiska.',
@@ -618,6 +633,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'car-rent', name: 'Rent a car', category: 'auto', icon: '🚙',
+    layout: 'utility',
     businessName: 'Rent Auto', slug: 'rent-auto',
     tagline: 'Vaš auto, kada vam treba.',
     description: 'Iznajmljivanje vozila uz fleksibilne uslove, puno osiguranje i dostavu na adresu.',
@@ -630,6 +646,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'towing', name: 'Šlep služba', category: 'auto', icon: '🚨',
+    layout: 'utility',
     businessName: 'Auto Šlep 24h', slug: 'auto-slep-24h',
     tagline: 'Tu smo kada je najteže.',
     description: 'Dežurna šlep služba 24 sata, prevoz vozila do servisa ili kućne adrese.',
@@ -643,6 +660,7 @@ const extraPresets: PresetSeed[] = [
   // — Ugostiteljstvo —
   compactPreset({
     id: 'hotel', name: 'Hotel i apartmani', category: 'hospitality', icon: '🏨',
+    layout: 'premium',
     businessName: 'Apartmani More', slug: 'apartmani-more',
     tagline: 'Odmor bez brige.',
     description: 'Udobni apartmani blizu centra, sa doručkom i fleksibilnim prijavljivanjem.',
@@ -655,6 +673,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'catering', name: 'Ketering', category: 'hospitality', icon: '🍲',
+    layout: 'premium',
     businessName: 'Ketering Delikates', slug: 'ketering-delikates',
     tagline: 'Ukus koji dolazi vama.',
     description: 'Ketering za poslovne ručkove, proslave i događaje, uz dostavu i posluženje.',
@@ -667,6 +686,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'pizzeria', name: 'Picerija', category: 'hospitality', icon: '🍕',
+    layout: 'premium',
     businessName: 'Pizzeria Roma', slug: 'pizzeria-roma',
     tagline: 'Iz peći, toplo do stola.',
     description: 'Pizza iz krušne peći, sveže testenine i salate, uz dostavu na kućnu adresu.',
@@ -680,6 +700,7 @@ const extraPresets: PresetSeed[] = [
   // — Zdravlje —
   compactPreset({
     id: 'vet', name: 'Veterinarska ambulanta', category: 'health', icon: '🐾',
+    layout: 'booking',
     businessName: 'Vet Care', slug: 'vet-care',
     tagline: 'Nega za svakog ljubimca.',
     description: 'Pregledi, vakcinacija i savetovanje za pse, mačke i male životinje.',
@@ -705,6 +726,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'nutrition', name: 'Nutricionista', category: 'health', icon: '🥗',
+    layout: 'booking',
     businessName: 'Nutri Plan', slug: 'nutri-plan',
     tagline: 'Plan koji se drži.',
     description: 'Individualni planovi ishrane i praćenje rezultata, bez strogih i neodrživih dijeta.',
@@ -810,6 +832,7 @@ const extraPresets: PresetSeed[] = [
   // — Usluge u kući —
   compactPreset({
     id: 'plumber', name: 'Vodoinstalater', category: 'home', icon: '🚰',
+    layout: 'utility',
     businessName: 'Vodo Instal', slug: 'vodo-instal',
     tagline: 'Voda pod kontrolom.',
     description: 'Popravke i instalacije vodovodnih i grejnih sistema, bez odlaganja.',
@@ -822,6 +845,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'cleaning', name: 'Čišćenje', category: 'home', icon: '🧽',
+    layout: 'utility',
     businessName: 'Clean Pro', slug: 'clean-pro',
     tagline: 'Čisto bez vašeg truda.',
     description: 'Generalno i dubinsko čišćenje stanova, kuća i poslovnih prostora.',
@@ -834,6 +858,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'ac-service', name: 'Klima servis', category: 'home', icon: '❄️',
+    layout: 'utility',
     businessName: 'Klima Servis', slug: 'klima-servis',
     tagline: 'Prihvatljiva temperatura cele godine.',
     description: 'Servis, montaža i punjenje klima uređaja, uz redovno održavanje.',
@@ -846,6 +871,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'carpenter', name: 'Stolar', category: 'home', icon: '🪚',
+    layout: 'utility',
     businessName: 'Stolarstvo Drvo', slug: 'stolarstvo-drvo',
     tagline: 'Nameštaj po meri.',
     description: 'Izrada kuhinja, plakara i nameštaja po meri, od ideje do montaže.',
@@ -858,6 +884,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'moving', name: 'Selidbe', category: 'home', icon: '📦',
+    layout: 'utility',
     businessName: 'Selidbe Express', slug: 'selidbe-express',
     tagline: 'Selidba bez stresa.',
     description: 'Selidbe stanova i kancelarija, uz pakovanje, utovar i prevoz.',
@@ -910,6 +937,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'photo-studio', name: 'Foto studio', category: 'professional', icon: '📷',
+    layout: 'portfolio',
     businessName: 'Foto Studio', slug: 'foto-studio',
     tagline: 'Trenuci koji ostaju.',
     description: 'Portreti, venčanja i komercijalna fotografija, uz uređivanje i obradu.',
@@ -923,6 +951,7 @@ const extraPresets: PresetSeed[] = [
   // — Prodavnice i zanat —
   compactPreset({
     id: 'clothes', name: 'Prodavnica odeće', category: 'retail', icon: '👗',
+    layout: 'portfolio',
     businessName: 'Moda Shop', slug: 'moda-shop',
     tagline: 'Stil za svaki dan.',
     description: 'Ženska i muška kolekcija, uz lično savetovanje pri izboru.',
@@ -935,6 +964,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'bookstore', name: 'Knjižara', category: 'retail', icon: '📚',
+    layout: 'portfolio',
     businessName: 'Knjižara Reč', slug: 'knjizara-rec',
     tagline: 'Dobra knjiga je uvek tu.',
     description: 'Knjige, školski pribor i pokloni, uz mogućnost poručivanja naslova.',
@@ -947,6 +977,7 @@ const extraPresets: PresetSeed[] = [
   }),
   compactPreset({
     id: 'jewelry', name: 'Zlatara', category: 'retail', icon: '💍',
+    layout: 'portfolio',
     businessName: 'Zlatara Sjaj', slug: 'zlatara-sjaj',
     tagline: 'Detalj koji traje.',
     description: 'Prstenje, nakit po meri i popravke, uz sertifikat o kvalitetu.',
@@ -2303,6 +2334,65 @@ function TemplateCard({ eyebrow, title, description, color, icon, preview, booki
             <span className="block h-1.5 w-full bg-slate-100" />
             <span className="block h-1.5 w-full bg-slate-100" />
             <span className="block h-1.5 w-3/4 bg-slate-100" />
+          </div>
+        </div>
+      ) : layout === 'premium' ? (
+        <div className="relative flex h-full flex-col items-center justify-center bg-[#12110f] px-4">
+          <span className="text-[6px] font-bold uppercase tracking-[0.3em]" style={{ color }}>{eyebrow}</span>
+          <span className="mt-2 block h-2.5 w-2/3 bg-[#f0e9db]" />
+          <span className="mt-1.5 block h-2.5 w-1/2 bg-white/40" />
+          <span className="mt-2.5 block h-px w-10" style={{ backgroundColor: color }} />
+          <div className="mt-3 flex w-full items-center gap-2 border-t border-white/10 pt-2">
+            <span className="h-1 flex-1 bg-white/20" />
+            <span className="h-1 w-6" style={{ backgroundColor: color }} />
+          </div>
+        </div>
+      ) : layout === 'portfolio' ? (
+        <div className="relative flex h-full flex-col">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-900">{preview}</span>
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
+          </div>
+          <div className="mt-2 columns-3 gap-1">
+            <span className="mb-1 block h-7 break-inside-avoid" style={{ backgroundColor: `${color}44` }} />
+            <span className="mb-1 block h-9 break-inside-avoid bg-slate-200" />
+            <span className="mb-1 block h-6 break-inside-avoid bg-slate-200" />
+            <span className="mb-1 block h-6 break-inside-avoid bg-slate-200" />
+            <span className="mb-1 block h-8 break-inside-avoid" style={{ backgroundColor: `${color}44` }} />
+            <span className="mb-1 block h-5 break-inside-avoid bg-slate-200" />
+          </div>
+        </div>
+      ) : layout === 'utility' ? (
+        <div className="relative flex h-full flex-col justify-between rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
+            <span className="text-[8px] font-black tracking-tight text-slate-900">{preview}</span>
+            <span className="rounded px-1.5 py-0.5 text-[6px] font-black uppercase tracking-[0.1em] text-white" style={{ backgroundColor: color }}>Pozovi</span>
+          </div>
+          <div className="mt-2 space-y-1.5">
+            {[0, 1, 2].map((row) => (
+              <div key={row} className="flex items-center gap-2 border-b border-slate-100 pb-1.5">
+                <span className="h-2 flex-1 bg-slate-300" />
+                <span className="h-2 w-7 rounded-sm" style={{ backgroundColor: `${color}aa` }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : layout === 'booking' ? (
+        <div className="relative flex h-full items-stretch gap-2">
+          <div className="flex flex-1 flex-col justify-center">
+            <span className="text-[6px] font-black uppercase tracking-[0.2em]" style={{ color }}>{eyebrow}</span>
+            <span className="mt-2 block h-2.5 w-full bg-slate-300" />
+            <span className="mt-1.5 block h-2.5 w-3/4 bg-slate-300" />
+            <span className="mt-3 block h-4 w-16 rounded" style={{ backgroundColor: color }} />
+          </div>
+          <div className="w-[46%] rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm">
+            <span className="block h-1 w-2/3 bg-slate-300" />
+            <div className="mt-1.5 grid grid-cols-4 gap-0.5">
+              {Array.from({ length: 12 }).map((_, cell) => (
+                <span key={cell} className="aspect-square rounded-sm" style={cell === 5 || cell === 10 ? { backgroundColor: color } : { backgroundColor: '#e2e8f0' }} />
+              ))}
+            </div>
+            <span className="mt-1.5 block h-1 w-full bg-slate-100" />
           </div>
         </div>
       ) : (<>

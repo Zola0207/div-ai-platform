@@ -91,6 +91,7 @@ export default function BookingForm({
   theme = 'light',
   className = '',
   waLink,
+  columns = 2,
 }: {
   draft: SiteDraft;
   bookings: Booking[];
@@ -99,10 +100,13 @@ export default function BookingForm({
   theme?: Theme;
   className?: string;
   waLink?: string | null;
+  columns?: 1 | 2;
 }) {
   const t = themes[theme];
   const copy = bookingCopy[draft.bookingType];
   const isQuote = draft.bookingType === 'quote';
+  const gridCols = columns === 1 ? 'sm:grid-cols-1' : 'sm:grid-cols-2';
+  const spanner = columns === 1 ? 'sm:col-span-1' : 'sm:col-span-2';
 
   const [monthCursor, setMonthCursor] = useState(() => {
     const now = new Date();
@@ -157,7 +161,7 @@ export default function BookingForm({
     : '';
 
   return (
-    <form onSubmit={onBooking} className={`grid gap-3 sm:grid-cols-2 ${t.form} ${className}`}>
+    <form onSubmit={onBooking} className={`grid gap-3 ${gridCols} ${t.form} ${className}`}>
       <label className={`block text-left ${t.label}`}>
         Ime i prezime
         <input name="clientName" placeholder="Vaše ime" required className={t.input} />
@@ -186,18 +190,18 @@ export default function BookingForm({
         </select>
       </label>
       {selectedService && (
-        <p className={`-mt-1 sm:col-span-2 ${t.muted}`}>Trajanje: {durationLabel(timing)} · {timing.fullDay ? 'zauzima ceo dan' : 'termin po dogovoru'}</p>
+        <p className={`-mt-1 ${spanner} ${t.muted}`}>Trajanje: {durationLabel(timing)} · {timing.fullDay ? 'zauzima ceo dan' : 'termin po dogovoru'}</p>
       )}
 
       {!isQuote ? (
         <>
           <input type="hidden" name="date" value={selectedDate} />
           <input type="hidden" name="time" value={selectedTime} />
-          <div className={`grid gap-3 sm:col-span-2 ${t.panel} ${timing.fullDay ? 'sm:grid-cols-1' : 'sm:grid-cols-[1.05fr_0.95fr]'}`}>
+          <div className={`grid gap-3 ${spanner} ${t.panel} ${columns === 1 || timing.fullDay ? 'sm:grid-cols-1' : 'sm:grid-cols-[1.05fr_0.95fr]'}`}>
             <div className={t.card}>
               <div className="flex items-center justify-between gap-2">
                 <button type="button" aria-label="Prethodni mesec" onClick={() => changeMonth(-1)} className={t.nav}>‹</button>
-                <p className={t.strong}>{MONTH_NAMES[month]} {year}.</p>
+                <p className={`whitespace-nowrap ${t.strong}`}>{MONTH_NAMES[month]} {year}.</p>
                 <button type="button" aria-label="Sledeći mesec" onClick={() => changeMonth(1)} className={t.nav}>›</button>
               </div>
               <div className={`mt-2 grid grid-cols-7 gap-1 text-center ${t.weekday}`}>
@@ -272,7 +276,7 @@ export default function BookingForm({
           </div>
         </>
       ) : (
-        <label className={`block text-left sm:col-span-2 ${t.label}`}>
+        <label className={`block text-left ${spanner} ${t.label}`}>
           Napomena
           <input name="time" placeholder="Kratak opis potrebe" className={t.input} />
         </label>
@@ -281,19 +285,19 @@ export default function BookingForm({
       <button
         type="submit"
         disabled={!isQuote && (!selectedDate || (!timing.fullDay && !selectedTime))}
-        className={`sm:col-span-2 ${t.submit}`}
+        className={`${spanner} ${t.submit}`}
         style={{ backgroundColor: draft.accentColor, color: contrastText(draft.accentColor) }}
       >
         {copy.submit} <span aria-hidden="true">→</span>
       </button>
 
       {waLink && (
-        <a href={waLink} target="_blank" rel="noreferrer" className={`text-center sm:col-span-2 ${t.wa}`}>
+        <a href={waLink} target="_blank" rel="noreferrer" className={`text-center ${spanner} ${t.wa}`}>
           Ili pošaljite poruku na WhatsApp →
         </a>
       )}
 
-      {bookingMessage && <p role="status" className={`sm:col-span-2 ${t.notice}`}>{bookingMessage}</p>}
+      {bookingMessage && <p role="status" className={`${spanner} ${t.notice}`}>{bookingMessage}</p>}
     </form>
   );
 }
