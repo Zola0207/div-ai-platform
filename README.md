@@ -70,6 +70,13 @@ Ruta je `app/api/ai/suggest/route.ts`, logika u `lib/ai.ts`. Ako ključ nije pos
 
 **Trajanje termina:** svaka usluga ima `durationMinutes` ili `durationDays`. Podrazumevano se bira po delatnosti (`CATEGORY_DURATION` u `app/site-builder.tsx`), a izuzeci su u `PRESET_DURATIONS`. Kalendar prikazuje samo termine u koje usluga stvarno staje; kada usluga traje ceo dan ili više dana, klijent bira samo datum.
 
+## Kontakt, mapa i WhatsApp
+
+- **Mapa:** blok „Mapa i lokacija“ prikazuje pravu Google mapu sa adresom (`https://www.google.com/maps?q=…&output=embed`, bez API ključa) i link „Otvori u Google mapama“. Blok se automatski uključuje svakom šablonu koji ima adresu; ako adrese nema, prikazuje se uputstvo umesto praznog okvira.
+- **WhatsApp:** ako je telefon unet, sajt dobija dugme „WhatsApp“ u kontaktu i link „Ili pošaljite poruku na WhatsApp“ ispod forme za termin. Broj se sam prevodi iz lokalnog (`06x…`) u međunarodni format za `wa.me`.
+- **Otkazani upiti:** upiti sa statusom „Otkazano“ više ne drže termin zauzetim — slot se odmah vraća u ponudu.
+- **Deljenje:** posle objave u zaglavlju uređivača stoje „Otvori sajt“ i „Kopiraj link“.
+
 ## Statistika poseta
 
 Panel **Statistika** (vidljiv prijavljenim korisnicima) prikazuje posete u poslednjih 30 dana, posete danas i u poslednjih 7 dana, broj upita, konverziju (upiti / posete) i tabelu po sajtu.

@@ -1042,8 +1042,16 @@ function buildDraft(seed: PresetSeed): SiteDraft {
       { label: 'Prostor', emoji: '🏠' },
       { label: 'Detalji', emoji: '📸' },
     ],
-    visibleBlocks: seed.blocks ?? DEFAULT_BLOCKS,
+    visibleBlocks: seed.blocks ?? (seed.address ? withMap(DEFAULT_BLOCKS) : DEFAULT_BLOCKS),
   };
+}
+
+// Mapa ima smisla samo kada postoji adresa; ubacujemo je pre kontakta.
+function withMap(blocks: BlockId[]): BlockId[] {
+  if (blocks.includes('map')) return blocks;
+  const index = blocks.indexOf('contact');
+  if (index === -1) return [...blocks, 'map'];
+  return [...blocks.slice(0, index), 'map', ...blocks.slice(index)];
 }
 
 const presets = presetSeeds.map(buildDraft);
@@ -1649,9 +1657,26 @@ export default function SiteBuilder() {
               </button>
             )}
             {screen === 'editor' && publishedSlug && (
-              <a href={`/s/${publishedSlug}`} target="_blank" rel="noreferrer" className="hidden rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 sm:inline-flex">
-                Otvori sajt ↗
-              </a>
+              <>
+                <a href={`/s/${publishedSlug}`} target="_blank" rel="noreferrer" className="hidden rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 sm:inline-flex">
+                  Otvori sajt ↗
+                </a>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const url = `${window.location.origin}/s/${publishedSlug}`;
+                    try {
+                      await navigator.clipboard.writeText(url);
+                      setNotice('Link sajta je kopiran.');
+                    } catch {
+                      setNotice(url);
+                    }
+                  }}
+                  className="hidden rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 sm:inline-flex"
+                >
+                  Kopiraj link
+                </button>
+              </>
             )}
             {authReady && user ? (
               <button onClick={() => setScreen('account')} className={`flex items-center gap-2 rounded-xl border p-1.5 pr-2 transition ${screen === 'account' ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>

@@ -144,6 +144,7 @@ Naslovna · O nama · Usluge i cene · Galerija · Cenovnik · Radno vreme · Za
 - ✅ OG slika za deljenje (platforma i svaki sajt), sitemap, robots, 404
 - ✅ Pravne strane: politika privatnosti i uslovi korišćenja
 - ✅ Statistika poseta po sajtu (bez kolačića i IP adresa), sa konverzijom upita
+- ✅ Google mapa sa adresom, WhatsApp dugme, otkazani upiti oslobađaju termin
 - ✅ Ograničenje broja sajtova po planu (trigger u bazi + provera u klijentu)
 - ✅ Stripe checkout po planu (19 / 49 / 149 € + 999 € jednokratno)
 - ✅ Billing portal i webhook koji ažurira plan i status

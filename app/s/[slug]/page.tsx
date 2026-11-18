@@ -142,10 +142,10 @@ async function loadBookings(siteId: string): Promise<Booking[]> {
     const admin = getSupabaseAdmin();
     const { data } = await admin
       .from('leads')
-      .select('preferred_date, preferred_time')
+      .select('preferred_date, preferred_time, status')
       .eq('site_id', siteId);
     return (data ?? [])
-      .filter((row) => row.preferred_date)
+      .filter((row) => row.preferred_date && row.status !== 'Otkazano')
       .map((row, index) => ({
         id: String(index),
         businessName: '',

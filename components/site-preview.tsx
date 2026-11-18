@@ -33,6 +33,7 @@ export type Booking = {
   date: string;
   time: string;
   siteId?: string | null;
+  status?: string;
 };
 
 export type SiteDraft = {
@@ -136,6 +137,16 @@ function initials(value: string): string {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
+// Srpski brojevi su najčešće u lokalnom formatu (06x…), a WhatsApp traži
+// međunarodni bez plusa i bez vodeće nule.
+function whatsappLink(phone: string, message: string): string | null {
+  let digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (!digits.startsWith('381') && digits.startsWith('0')) digits = `381${digits.slice(1)}`;
+  if (digits.length < 8) return null;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+}
+
 export function SitePreview({ draft, onBooking, bookingMessage, bookings, variant = 'preview' }: { draft: SiteDraft; onBooking: (event: FormEvent<HTMLFormElement>) => void; bookingMessage: string; bookings: Booking[]; variant?: 'preview' | 'page' }) {
   const visible = (id: BlockId) => draft.visibleBlocks.includes(id);
   const copy = bookingCopy[draft.bookingType];
@@ -152,9 +163,13 @@ export function SitePreview({ draft, onBooking, bookingMessage, bookings, varian
   const selectedService = draft.services.find((service) => service.name === selectedServiceName);
   const timing = serviceTiming(selectedService, draft.availability);
 
+  // Otkazani upiti ne drže termin zauzetim.
+  const activeBookings = bookings.filter((booking) => booking.status !== 'Otkazano');
+  const waLink = whatsappLink(draft.phone, `Zdravo, zanima me termin u ${draft.businessName}.`);
+
   const todayIso = toISODate(new Date());
   const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
-  const bookedTimes = selectedDate ? bookings.filter((booking) => booking.date === selectedDate).map((booking) => booking.time) : [];
+  const bookedTimes = selectedDate ? activeBookings.filter((booking) => booking.date === selectedDate).map((booking) => booking.time) : [];
   const availableSlots = selectedDate && !timing.fullDay
     ? slotsForDate(parseISODate(selectedDate), draft.availability, bookedTimes, timing.minutes)
         .filter((slot) => selectedDate !== todayIso || minutesFromTime(slot) > nowMinutes)
@@ -172,7 +187,7 @@ export function SitePreview({ draft, onBooking, bookingMessage, bookings, varian
     if (iso < todayIso) return false;
     if (draft.availability.blockedDates.includes(iso)) return false;
     if (!(draft.availability.week[weekdayIndexOf(date)]?.open ?? false)) return false;
-    const dayBookings = bookings.filter((booking) => booking.date === iso);
+    const dayBookings = activeBookings.filter((booking) => booking.date === iso);
     if (timing.fullDay) return dayBookings.length === 0;
     const dayBooked = dayBookings.map((booking) => booking.time);
     const slots = slotsForDate(date, draft.availability, dayBooked, timing.minutes);
@@ -342,16 +357,21 @@ export function SitePreview({ draft, onBooking, bookingMessage, bookings, varian
           <PreviewInput label="Napomena" name="time" placeholder="Kratak opis potrebe" />
         )}
         <button type="submit" disabled={!isQuote && (!selectedDate || (!timing.fullDay && !selectedTime))} className="rounded-xl px-4 py-3 text-xs font-extrabold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2" style={{ backgroundColor: draft.accentColor }}>{copy.submit} <span aria-hidden="true">→</span></button>
+        {waLink && (
+          <a href={waLink} target="_blank" rel="noreferrer" className="text-center text-[10px] font-bold text-[#128C7E] hover:underline sm:col-span-2">
+            Ili pošaljite poruku na WhatsApp →
+          </a>
+        )}
         {bookingMessage && <p role="status" className="rounded-xl bg-emerald-50 px-3 py-2 text-[10px] font-semibold leading-5 text-emerald-800 sm:col-span-2">{bookingMessage}</p>}
       </form>
     </section>}
 
     {visible('map') && <section className="px-6 py-9 sm:px-12 sm:py-11">
-      <div className="grid gap-5 sm:grid-cols-2 sm:items-center"><div><p className="text-[9px] font-extrabold uppercase tracking-[0.17em]" style={{ color: draft.accentColor }}>Gde se nalazimo</p><h2 className="mt-2 text-xl font-black tracking-tight">Nađite nas na mapi</h2><p className="mt-2 text-[10px] leading-5 text-slate-500">{draft.address}</p></div><div className="flex aspect-[4/3] items-center justify-center rounded-2xl border border-slate-100 bg-[#fafafa]"><div className="text-center"><span className="text-2xl">📍</span><p className="mt-2 text-[10px] font-bold text-slate-500">{draft.address}</p></div></div></div>
+      <div className="grid gap-5 sm:grid-cols-2 sm:items-center"><div><p className="text-[9px] font-extrabold uppercase tracking-[0.17em]" style={{ color: draft.accentColor }}>Gde se nalazimo</p><h2 className="mt-2 text-xl font-black tracking-tight">Nađite nas na mapi</h2><p className="mt-2 text-[10px] leading-5 text-slate-500">{draft.address}</p>{draft.address && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(draft.address)}`} target="_blank" rel="noreferrer" className="mt-3 inline-block text-[10px] font-bold" style={{ color: draft.accentColor }}>Otvori u Google mapama <span aria-hidden="true">↗</span></a>}</div>{draft.address ? (<div className="overflow-hidden rounded-2xl border border-slate-100 bg-[#fafafa]"><iframe title={`Mapa — ${draft.businessName}`} src={`https://www.google.com/maps?q=${encodeURIComponent(draft.address)}&output=embed`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" className="h-[240px] w-full border-0 sm:h-[265px]" /></div>) : (<div className="flex aspect-[4/3] items-center justify-center rounded-2xl border border-slate-100 bg-[#fafafa]"><div className="text-center"><span className="text-2xl">📍</span><p className="mt-2 text-[10px] font-bold text-slate-500">Unesite adresu da bi se prikazala mapa</p></div></div>)}</div>
     </section>}
 
     {visible('contact') && <section id="site-contact" className="border-t border-slate-100 px-6 py-8 sm:px-12">
-      <div className="grid gap-5 sm:grid-cols-[1fr_auto] sm:items-center"><div><p className="text-[9px] font-extrabold uppercase tracking-[0.17em]" style={{ color: draft.accentColor }}>Tu smo za vas</p><h2 className="mt-1 text-lg font-black">Posetite nas ili pozovite.</h2><p className="mt-1 text-[10px] text-slate-500">{draft.address}</p></div><div className="flex flex-wrap gap-2"><a href={`tel:${draft.phone.replace(/[^+\d]/g, '')}`} className="rounded-xl px-4 py-2.5 text-[10px] font-bold text-white" style={{ backgroundColor: draft.accentColor }}>Pozovi {draft.phone}</a><a href={`mailto:${draft.email}`} className="rounded-xl border border-slate-200 px-4 py-2.5 text-[10px] font-bold text-slate-700">Pošalji email</a></div></div>
+      <div className="grid gap-5 sm:grid-cols-[1fr_auto] sm:items-center"><div><p className="text-[9px] font-extrabold uppercase tracking-[0.17em]" style={{ color: draft.accentColor }}>Tu smo za vas</p><h2 className="mt-1 text-lg font-black">Posetite nas ili pozovite.</h2><p className="mt-1 text-[10px] text-slate-500">{draft.address}</p></div><div className="flex flex-wrap gap-2"><a href={`tel:${draft.phone.replace(/[^+\d]/g, '')}`} className="rounded-xl px-4 py-2.5 text-[10px] font-bold text-white" style={{ backgroundColor: draft.accentColor }}>Pozovi {draft.phone}</a>{waLink && <a href={waLink} target="_blank" rel="noreferrer" className="rounded-xl bg-[#25D366] px-4 py-2.5 text-[10px] font-bold text-white">WhatsApp</a>}<a href={`mailto:${draft.email}`} className="rounded-xl border border-slate-200 px-4 py-2.5 text-[10px] font-bold text-slate-700">Pošalji email</a></div></div>
     </section>}
 
     <footer className="flex flex-wrap items-center justify-between gap-2 bg-slate-950 px-6 py-4 text-[9px] text-slate-400 sm:px-12"><span>© {new Date().getFullYear()} {draft.businessName}. Sva prava zadržana.</span><span>Izrađeno uz DiV.ai</span></footer>
