@@ -52,7 +52,7 @@ export default function PremiumLayout({ draft, bookings, onBooking, bookingMessa
     {visible('hero') && <section id="site-top" className="relative overflow-hidden border-b border-white/10">
       {draft.heroImageUrl && (
         <>
-          <img src={draft.heroImageUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
+          <SiteImage src={draft.heroImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" fallback={<></>} />
           <div className="absolute inset-0 bg-[#12110f]/80" aria-hidden="true" />
         </>
       )}

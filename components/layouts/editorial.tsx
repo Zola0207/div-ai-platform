@@ -68,15 +68,18 @@ export default function EditorialLayout({ draft, bookings, onBooking, bookingMes
             )}
           </div>
           <div className="relative aspect-[4/5] w-full overflow-hidden border border-slate-200" style={{ backgroundColor: p.tint }}>
-            {draft.heroImageUrl ? (
-              <img src={draft.heroImageUrl} alt={draft.businessName} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full flex-col justify-between p-5">
-                <span className="text-[9px] uppercase tracking-[0.28em] text-slate-400">Portret prostora</span>
-                <span style={{ color: p.accent }}><SiteIcon name={icon} className="h-10 w-10" strokeWidth={1.2} /></span>
-                <span className="text-[10px] leading-5 text-slate-500">{draft.businessName}</span>
-              </div>
-            )}
+            <SiteImage
+              src={draft.heroImageUrl}
+              alt={draft.businessName}
+              className="h-full w-full object-cover"
+              fallback={
+                <div className="flex h-full flex-col justify-between p-5">
+                  <span className="text-[9px] uppercase tracking-[0.28em] text-slate-400">Portret prostora</span>
+                  <span style={{ color: p.accent }}><SiteIcon name={icon} className="h-10 w-10" strokeWidth={1.2} /></span>
+                  <span className="text-[10px] leading-5 text-slate-500">{draft.businessName}</span>
+                </div>
+              }
+            />
           </div>
         </div>
         {meta.length > 0 && (

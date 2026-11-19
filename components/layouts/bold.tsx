@@ -58,9 +58,9 @@ export default function BoldLayout({ draft, bookings, onBooking, bookingMessage,
       </div>
     </header>
 
-    {visible('hero') && <section id="site-top" className="relative overflow-hidden" style={{ backgroundColor: draft.accentColor, color: onAccent }}>
+    {visible('hero') && <section id="site-top" className="relative overflow-hidden" style={{ backgroundColor: p.accent, color: onAccent }}>
       {draft.heroImageUrl && (
-        <img src={draft.heroImageUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-20" />
+        <SiteImage src={draft.heroImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-20" fallback={<></>} />
       )}
       <div className="relative px-6 pb-10 pt-12 sm:px-10 sm:pb-12 sm:pt-16">
         <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.32em] opacity-70"><SiteIcon name={icon} className="h-3.5 w-3.5" /> {draft.businessType || 'Dobrodošli'}</p>
