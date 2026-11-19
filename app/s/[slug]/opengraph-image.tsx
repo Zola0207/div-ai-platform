@@ -13,6 +13,12 @@ function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function monogram(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return name.trim().slice(0, 2).toUpperCase();
+}
+
 async function loadBrand(slug: string) {
   if (!isServerSupabaseConfigured()) return null;
   try {
@@ -31,7 +37,7 @@ async function loadBrand(slug: string) {
       type: text(draft.businessType),
       tagline: text(draft.tagline),
       accent: /^#[0-9a-f]{6}$/i.test(text(draft.accentColor)) ? text(draft.accentColor) : '#4f46e5',
-      icon: Array.from(text(draft.icon)).slice(0, 2).join(''),
+      icon: monogram(name),
     };
   } catch {
     return null;

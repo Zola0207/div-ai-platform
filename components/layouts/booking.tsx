@@ -1,11 +1,14 @@
 import BookingForm from '../blocks/booking-form';
 import { HoursRow, LogoMark } from '../blocks/site-parts';
+import { GalleryPlaceholder, SiteImage } from '../blocks/site-image';
+import { SiteIcon, siteIconFor } from '../blocks/site-icons';
 import {
   averageRating,
   bookingCopy,
   durationLabel,
   mapsEmbedLink,
   mapsSearchLink,
+  paletteOf,
   whatsappLink,
   type LayoutProps,
 } from '../blocks/site-types';
@@ -19,6 +22,8 @@ export default function BookingLayout({ draft, bookings, onBooking, bookingMessa
   const waLink = whatsappLink(draft.phone, `Zdravo, zanima me termin u ${draft.businessName}.`);
   const rating = averageRating(draft.reviews);
   const tel = `tel:${draft.phone.replace(/[^+\d]/g, '')}`;
+  const p = paletteOf(draft.accentColor);
+  const icon = siteIconFor(draft);
 
   // Forma živi u herou. Ako je hero isključen, dobija svoju sekciju — ali
   // nikad obe, da `#site-booking` uvek vodi na jedno mesto.
@@ -31,10 +36,10 @@ export default function BookingLayout({ draft, bookings, onBooking, bookingMessa
   ];
 
   const wrapperClass = variant === 'page'
-    ? 'mx-auto min-h-screen w-full bg-[#f7f7f5]'
-    : 'mx-auto min-h-[740px] max-w-[980px] overflow-hidden bg-[#f7f7f5] shadow-lg';
+    ? 'site-font mx-auto min-h-screen w-full'
+    : 'site-font mx-auto min-h-[740px] max-w-[980px] overflow-hidden shadow-lg';
 
-  return <div className={wrapperClass} style={{ '--site-accent': draft.accentColor } as React.CSSProperties}>
+  return <div className={wrapperClass} style={{ '--site-accent': p.accent, '--site-sans': 'var(--font-manrope)', backgroundColor: p.tint } as React.CSSProperties}>
     <header className="border-b border-slate-200 bg-white">
       <div className="flex items-center justify-between gap-3 px-6 py-4 sm:px-9">
         <a href="#site-top" className="flex min-w-0 items-center gap-2.5">
@@ -56,29 +61,29 @@ export default function BookingLayout({ draft, bookings, onBooking, bookingMessa
     </header>
 
     {visible('hero') && <section id="site-top" className="border-b border-slate-200 bg-white">
-      <div className="grid gap-6 px-6 py-8 sm:grid-cols-[0.78fr_1.22fr] sm:items-start sm:gap-8 sm:px-9 sm:py-10">
-        <div className="sm:pt-3">
-          <p className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.14em]" style={{ color: draft.accentColor, backgroundColor: `${draft.accentColor}12` }}>
-            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: draft.accentColor }} />
-            {draft.icon} {visible('booking') ? 'Zakazivanje online' : draft.businessType || 'Dobrodošli'}
+      <div className="grid gap-6 px-6 py-8 sm:grid-cols-[0.78fr_1.22fr] sm:items-center sm:gap-8 sm:px-9 sm:py-10">
+        <div>
+          <p className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.14em]" style={{ color: p.accent, backgroundColor: p.tint }}>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: p.accent }} />
+            <SiteIcon name={icon} className="h-3 w-3" /> {visible('booking') ? 'Zakazivanje online' : draft.businessType || 'Dobrodošli'}
           </p>
           <h1 className="mt-4 text-3xl font-black leading-[1.08] tracking-tight text-slate-950 sm:text-[40px]">{draft.tagline || 'Vaša poruka dobrodošlice'}</h1>
           <p className="mt-3 max-w-md text-xs leading-6 text-slate-600">{draft.description}</p>
 
-          <dl className="mt-5 grid gap-2 text-[10px]">
-            <div className="flex items-center gap-2">
-              <dt className="w-3 shrink-0 text-center" aria-hidden="true" style={{ color: draft.accentColor }}>✓</dt>
-              <dd className="text-slate-600">Slobodni termini se ažuriraju u realnom vremenu</dd>
-            </div>
-            <div className="flex items-center gap-2">
-              <dt className="w-3 shrink-0 text-center" aria-hidden="true" style={{ color: draft.accentColor }}>✓</dt>
-              <dd className="text-slate-600">Zakazivanje traje manje od minute</dd>
-            </div>
-            <div className="flex items-center gap-2">
-              <dt className="w-3 shrink-0 text-center" aria-hidden="true" style={{ color: draft.accentColor }}>✓</dt>
-              <dd className="text-slate-600">{draft.hours.weekdays} · {draft.address}</dd>
-            </div>
-          </dl>
+          <ul className="mt-5 grid gap-2 text-[10px]">
+            <li className="flex items-center gap-2">
+              <SiteIcon name="check" className="h-3 w-3 shrink-0" style={{ color: p.accent }} />
+              <span className="text-slate-600">Slobodni termini se ažuriraju u realnom vremenu</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <SiteIcon name="check" className="h-3 w-3 shrink-0" style={{ color: p.accent }} />
+              <span className="text-slate-600">Zakazivanje traje manje od minute</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <SiteIcon name="check" className="h-3 w-3 shrink-0" style={{ color: p.accent }} />
+              <span className="text-slate-600">{draft.hours.weekdays} · {draft.address}</span>
+            </li>
+          </ul>
 
           {rating && (
             <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
@@ -92,7 +97,7 @@ export default function BookingLayout({ draft, bookings, onBooking, bookingMessa
           </div>
         </div>
 
-        <div id={formInHero ? 'site-booking' : undefined} className="rounded-2xl border border-slate-200 bg-[#fbfbf9] p-3 shadow-sm sm:p-4">
+        <div id={formInHero ? 'site-booking' : undefined} className="rounded-2xl border border-slate-200 p-3 shadow-sm sm:p-4" style={{ backgroundColor: p.tint }}>
           {formInHero ? (
             <>
               <div className="mb-3 flex items-end justify-between gap-2 px-1">
@@ -197,13 +202,9 @@ export default function BookingLayout({ draft, bookings, onBooking, bookingMessa
           <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">Galerija</h2>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {draft.gallery.map((item, index) => (
-              <figure key={`${item.label}-${index}`} className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-slate-100 bg-[#f7f7f5]">
-                {item.imageUrl ? (
-                  <img src={item.imageUrl} alt={item.label} loading="lazy" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-3xl">{item.emoji}</div>
-                )}
-                <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-3 py-2 text-[9px] font-bold text-white">{item.label}</figcaption>
+              <figure key={`${item.label}-${index}`} className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-slate-100" style={{ backgroundColor: p.tint }}>
+                <SiteImage src={item.imageUrl} alt={item.label} className="h-full w-full object-cover" fallback={<GalleryPlaceholder label={item.label} icon={icon} accent={p.accent} showLabel />} />
+                {item.imageUrl && <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-3 py-2 text-[9px] font-bold text-white">{item.label}</figcaption>}
               </figure>
             ))}
           </div>
@@ -274,7 +275,7 @@ export default function BookingLayout({ draft, bookings, onBooking, bookingMessa
             <p className="text-[9px] font-black uppercase tracking-[0.16em]" style={{ color: draft.accentColor }}>{copy.section}</p>
             <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">{copy.hero}</h2>
           </div>
-          <div className="mx-auto mt-5 max-w-2xl rounded-2xl border border-slate-200 bg-[#fbfbf9] p-3 shadow-sm sm:p-4">
+          <div className="mx-auto mt-5 max-w-2xl rounded-2xl border border-slate-200 p-3 shadow-sm sm:p-4" style={{ backgroundColor: p.tint }}>
             <BookingForm
               draft={draft}
               bookings={bookings}
@@ -310,24 +311,26 @@ export default function BookingLayout({ draft, bookings, onBooking, bookingMessa
     )}
 
     {visible('contact') && (
-      <section id="site-contact" className="border-b border-slate-200">
+      <section id="site-contact" style={{ backgroundColor: p.deep, color: p.onDeep }}>
         <div className="grid gap-5 px-6 py-9 sm:grid-cols-[1.3fr_0.7fr] sm:items-end sm:px-9">
           <div>
-            <p className="text-[9px] font-black uppercase tracking-[0.16em]" style={{ color: draft.accentColor }}>Kontakt</p>
-            <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">Posetite nas ili pozovite.</h2>
-            <a href={tel} className="mt-2 inline-block text-xl font-black tracking-tight text-slate-950 transition hover:opacity-70">{draft.phone}</a>
-            <p className="mt-1 text-[11px] text-slate-500">{draft.address} · {draft.email}</p>
+            <p className="text-[9px] font-black uppercase tracking-[0.16em] opacity-60">Kontakt</p>
+            <h2 className="mt-1 text-xl font-black tracking-tight">Posetite nas ili pozovite.</h2>
+            <a href={tel} className="mt-2 inline-block text-xl font-black tracking-tight transition hover:opacity-80">{draft.phone}</a>
+            <p className="mt-1 text-[11px] opacity-60">{draft.address} · {draft.email}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <a href={tel} className="rounded-xl px-4 py-2.5 text-[10px] font-black text-white" style={{ backgroundColor: draft.accentColor }}>Pozovi</a>
+            <a href={tel} className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-[10px] font-black" style={{ color: p.deep }}>
+              <SiteIcon name="phone" className="h-3 w-3" /> Pozovi
+            </a>
             {waLink && <a href={waLink} target="_blank" rel="noreferrer" className="rounded-xl bg-[#25D366] px-4 py-2.5 text-[10px] font-black text-white">WhatsApp</a>}
-            <a href={`mailto:${draft.email}`} className="rounded-xl border border-slate-200 px-4 py-2.5 text-[10px] font-black text-slate-700">Email</a>
+            <a href={`mailto:${draft.email}`} className="rounded-xl px-4 py-2.5 text-[10px] font-black" style={{ boxShadow: `inset 0 0 0 1px ${p.onDeep}33` }}>Email</a>
           </div>
         </div>
       </section>
     )}
 
-    <footer className="flex flex-wrap items-center justify-between gap-2 px-6 py-5 text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400 sm:px-9">
+    <footer className="flex flex-wrap items-center justify-between gap-2 px-6 py-5 text-[9px] font-bold uppercase tracking-[0.14em] sm:px-9" style={{ backgroundColor: p.deep, color: `${p.onDeep}66` }}>
       <span>© {new Date().getFullYear()} {draft.businessName}</span>
       <span>DiV.ai</span>
     </footer>

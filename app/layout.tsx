@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo, Cormorant_Garamond, Fraunces, Geist, Geist_Mono, IBM_Plex_Sans, Instrument_Sans, Manrope } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
 import "./globals.css";
 
@@ -12,6 +12,57 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+// Tipografija sajtova. Isti tekst izgleda bitno drugačije u zavisnosti od
+// dizajna: editorial nosi mekani serif, premium tanak i raskošan, bold
+// kondenzovan i oštar, a servis i termin čitljiviji sans.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+});
+
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+});
+
+const archivo = Archivo({
+  variable: "--font-archivo",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+});
+
+const instrument = Instrument_Sans({
+  variable: "--font-instrument",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+});
+
+const plex = IBM_Plex_Sans({
+  variable: "--font-plex",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+});
+
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+});
+
+const fontVariables = [
+  geistSans.variable,
+  geistMono.variable,
+  fraunces.variable,
+  cormorant.variable,
+  archivo.variable,
+  instrument.variable,
+  plex.variable,
+  manrope.variable,
+].join(' ');
+
 
 const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://div-ai-platform.vercel.app').replace(/\/$/, '');
 
@@ -49,7 +100,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="sr"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${fontVariables} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>{children}</AuthProvider>

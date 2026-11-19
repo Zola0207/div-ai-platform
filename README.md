@@ -127,6 +127,13 @@ Svi ostali šabloni (i „Druga delatnost“) koriste `classic` dok se dizajn ne
 - **Kontrast:** `contrastText()` bira taman/svetan tekst na akcentnoj boji, a `accentOnDark()` posvetljuje tamne akcente za tekst na tamnim sekcijama (npr. cene u Bold i Premium dizajnu).
 - **Novi dizajn:** napraviti `components/layouts/<ime>.tsx` koji prima `LayoutProps`, dodati ID u `LAYOUT_IDS`/`LAYOUTS` (`components/blocks/site-types.ts`) i granu u `site-preview.tsx`.
 
+### Vizualni sloj (ikone, tipografija, paleta, slike)
+
+- **Ikone:** umesto emodžija sajtovi crtaju stroke SVG ikone iz `components/blocks/site-icons.tsx`. `siteIconFor(draft)` bira ikonu po šablonu, pa po kategoriji. Emodži ostaje u `draft.icon` samo zbog starih nacrta.
+- **Tipografija:** svaki dizajn ima svoj par fontova preko `--site-sans` / `--site-serif` i klasa `site-font` / `site-serif`. Fontovi se učitavaju u `app/layout.tsx` (`next/font/google`, `latin` + `latin-ext`).
+- **Paleta:** `paletteOf(accent)` iz jedne akcentne boje izvodi `tint`/`wash`/`line`/`soft`/`deep` i boju teksta na njima. Zato sekcije imaju ton, a kontakt i CTA blokovi tamnu, brendiranu pozadinu.
+- **Slike:** `SiteImage` prikazuje miran placeholder ako slika ne učita (`GalleryPlaceholder`), pa prazna galerija izgleda kao poziv da se doda fotografija, a ne kao greška. Pri objavi `withAutoImages()` popunjava samo nedostajuće slike (`lib/site-images.ts`), deterministički po nazivu i delatnosti.
+
 Booking logika je izdvojena u `components/blocks/booking-form.tsx` i ima tri teme (`light`, `flat`, `dark`), da se kalendar ne duplira po dizajnu. `Servis` i `Termin` dodatno koriste gust raspored: `Termin` stavlja formu u hero (jedan `#site-booking` na strani), a `Servis` lepljivu traku i traku za poziv prikazuje samo na objavljenoj strani (`variant === 'page'`), da ne prekrivaju uređivač.
 
 ## SEO, deljenje i pravne strane

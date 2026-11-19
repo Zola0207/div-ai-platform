@@ -9,6 +9,8 @@ import { SitePreview, LAYOUTS, type LayoutId } from '@/components/site-preview';
 import LeadsPanel, { type LeadItem } from '@/components/leads-panel';
 import AnalyticsPanel from '@/components/analytics-panel';
 import type { SiteRecord } from '@/lib/sites';
+import { withAutoImages } from '@/lib/site-images';
+import { SiteIcon, categoryIcon, siteIconFor, type SiteIconName } from '@/components/blocks/site-icons';
 import AccountScreen from './account-screen';
 import AuthScreen from './auth-screen';
 import PricingScreen from './pricing-screen';
@@ -1395,9 +1397,10 @@ export default function SiteBuilder() {
     }
   };
 
-  const saveToCloud = async (): Promise<string | null> => {
+  const saveToCloud = async (source?: SiteDraft): Promise<string | null> => {
     const client = getSupabaseClient();
-    if (!client || !user || !draft) return null;
+    const site = source ?? draft;
+    if (!client || !user || !site) return null;
 
     setCloudBusy(true);
     try {
@@ -1419,11 +1422,11 @@ export default function SiteBuilder() {
 
       const payload = {
         owner_id: user.id,
-        name: draft.businessName.trim() || 'Moj sajt',
-        slug: draft.slug.trim() || `sajt-${Date.now()}`,
-        template_id: draft.templateId,
-        category_id: draft.categoryId,
-        draft,
+        name: site.businessName.trim() || 'Moj sajt',
+        slug: site.slug.trim() || `sajt-${Date.now()}`,
+        template_id: site.templateId,
+        category_id: site.categoryId,
+        draft: site,
       };
 
       const result = cloudSiteId
@@ -1457,7 +1460,12 @@ export default function SiteBuilder() {
 
     setCloudBusy(true);
     try {
-      const siteId = await saveToCloud();
+      // Objavljen sajt ne sme da ostane bez slika: ako ih korisnik nije dodao,
+      // popunjavamo hero i galeriju determinističkim AI slikama.
+      const ready = withAutoImages(draft);
+      if (ready !== draft) setDraft(ready);
+
+      const siteId = await saveToCloud(ready);
       if (!siteId) return;
 
       const client = getSupabaseClient();
@@ -1480,7 +1488,9 @@ export default function SiteBuilder() {
       }
 
       setPublishedSlug(data.slug);
-      setNotice(`Sajt je objavljen na /s/${data.slug}.`);
+      setNotice(ready !== draft
+        ? `Sajt je objavljen na /s/${data.slug}. Dodali smo fotografije — možete ih zameniti u uređivaču.`
+        : `Sajt je objavljen na /s/${data.slug}.`);
     } catch {
       setNotice('Objava nije uspela. Pokušajte ponovo.');
     } finally {
@@ -1797,14 +1807,14 @@ export default function SiteBuilder() {
             <div className="mt-6 flex flex-wrap gap-2">
               <button onClick={() => setCategoryFilter('all')} className={`rounded-full px-4 py-2 text-xs font-bold transition ${categoryFilter === 'all' ? 'bg-slate-950 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'}`}>Sve delatnosti</button>
               {categories.map((category) => (
-                <button key={category.id} onClick={() => setCategoryFilter(category.id)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${categoryFilter === category.id ? 'bg-slate-950 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'}`}>{category.icon} {category.label}</button>
+                <button key={category.id} onClick={() => setCategoryFilter(category.id)} className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition ${categoryFilter === category.id ? 'bg-slate-950 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'}`}><SiteIcon name={categoryIcon(category.id)} className="h-3.5 w-3.5" /> {category.label}</button>
               ))}
             </div>
 
             <div className="mt-7 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {showCustomCard && (
                 <article className="flex flex-col overflow-hidden rounded-3xl border-2 border-dashed border-indigo-300 bg-indigo-50/50 p-6 transition hover:-translate-y-1 hover:border-indigo-400 hover:shadow-xl">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">✨</span>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-indigo-600 shadow-sm"><SiteIcon name="sparkles" className="h-5 w-5" /></span>
                   <h3 className="mt-4 text-lg font-black tracking-tight">Druga delatnost</h3>
                   <p className="mt-1 text-sm leading-6 text-slate-600">
                     Vaš biznis nije na listi? Unesite naziv i delatnost — pripremićemo strukturu koju dalje uređujete.
@@ -1823,7 +1833,7 @@ export default function SiteBuilder() {
                     title={presetName(preset.templateId)}
                     description={preset.description}
                     color={preset.accentColor}
-                    icon={preset.icon}
+                    icon={siteIconFor(preset)}
                     preview={preset.businessName}
                     bookingType={bookingTypes.find((type) => type.id === preset.bookingType)?.label ?? ''}
                     layout={preset.layoutId}
@@ -2301,7 +2311,7 @@ function presetName(templateId: string): string {
   return seed?.name ?? 'Šablon';
 }
 
-function TemplateCard({ eyebrow, title, description, color, icon, preview, bookingType, layout = 'classic', onChoose }: { eyebrow: string; title: string; description: string; color: string; icon: string; preview: string; bookingType: string; layout?: LayoutId; onChoose: () => void }) {
+function TemplateCard({ eyebrow, title, description, color, icon, preview, bookingType, layout = 'classic', onChoose }: { eyebrow: string; title: string; description: string; color: string; icon: SiteIconName; preview: string; bookingType: string; layout?: LayoutId; onChoose: () => void }) {
   const layoutLabel = LAYOUTS.find((item) => item.id === layout)?.label ?? 'Klasičan';
   return <article className="group flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-xl">
     <div className="relative h-40 overflow-hidden p-5" style={{ background: layout === 'bold' ? color : `linear-gradient(135deg, ${color}18, #ffffff 80%)` }}>
@@ -2399,7 +2409,7 @@ function TemplateCard({ eyebrow, title, description, color, icon, preview, booki
       <div className="absolute -right-6 -top-12 h-48 w-48 rounded-full opacity-20 blur-3xl" style={{ backgroundColor: color }} />
       <div className="relative mx-auto max-w-[260px] rounded-2xl border border-white bg-white/90 p-4 shadow-lg">
         <div className="flex items-center justify-between border-b border-slate-100 pb-2"><span className="text-[10px] font-black">{preview}</span><span className="text-[8px] text-slate-400">Početna　 Usluge　 Kontakt</span></div>
-        <div className="py-4 text-center"><span className="text-xl">{icon}</span><div className="mx-auto mt-3 h-1 w-12 rounded-full" style={{ backgroundColor: color }} /></div>
+        <div className="py-4 text-center"><SiteIcon name={icon} className="inline h-6 w-6" style={{ color }} /><div className="mx-auto mt-3 h-1 w-12 rounded-full" style={{ backgroundColor: color }} /></div>
         <div className="grid grid-cols-3 gap-2"><span className="h-8 rounded-lg bg-slate-100"/><span className="h-8 rounded-lg bg-slate-100"/><span className="h-8 rounded-lg bg-slate-100"/></div>
       </div>
       </>)}
@@ -2407,7 +2417,7 @@ function TemplateCard({ eyebrow, title, description, color, icon, preview, booki
     </div>
     <div className="flex flex-1 flex-col p-5">
       <p className="text-[10px] font-extrabold uppercase tracking-[0.17em]" style={{ color }}>{eyebrow}</p>
-      <div className="mt-1 flex items-start justify-between gap-3"><h3 className="text-lg font-black tracking-tight">{title}</h3><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-base" style={{ backgroundColor: `${color}15` }}>{icon}</span></div>
+      <div className="mt-1 flex items-start justify-between gap-3"><h3 className="text-lg font-black tracking-tight">{title}</h3><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${color}15`, color }}><SiteIcon name={icon} className="h-4 w-4" /></span></div>
       <p className="mt-2 text-xs leading-5 text-slate-500">{description}</p>
       <div className="mt-4 flex flex-wrap gap-2"><Pill>{bookingType}</Pill><Pill>Kalendar dostupnosti</Pill></div>
       <button onClick={onChoose} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-extrabold text-white transition hover:brightness-110" style={{ backgroundColor: color }}>Uredi ovaj šablon <span aria-hidden="true">→</span></button>

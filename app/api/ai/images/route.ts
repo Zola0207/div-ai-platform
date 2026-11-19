@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { siteImagePlan } from '@/lib/site-images';
 
 type ImagesBody = {
   businessName?: string;
@@ -28,25 +29,6 @@ function isAllowed(key: string): boolean {
   return true;
 }
 
-function hash(value: string): number {
-  let result = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    result = (result * 31 + value.charCodeAt(index)) % 2147483647;
-  }
-  return result;
-}
-
-function imageUrl(prompt: string, seed: number, width: number, height: number): string {
-  const query = new URLSearchParams({
-    width: String(width),
-    height: String(height),
-    seed: String(seed),
-    nologo: 'true',
-    model: 'flux',
-  });
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${query.toString()}`;
-}
-
 export async function POST(req: Request) {
   if (!isAllowed(clientKey(req))) {
     return NextResponse.json({ error: 'Previše AI zahteva. Sačekajte nekoliko minuta.' }, { status: 429 });
@@ -54,27 +36,17 @@ export async function POST(req: Request) {
 
   try {
     const body = (await req.json()) as ImagesBody;
-    const businessName = (body.businessName ?? '').trim().slice(0, 80);
-    const businessType = (body.businessType ?? '').trim().slice(0, 80) || 'uslužni biznis';
-    const labels = Array.isArray(body.labels)
-      ? body.labels.filter((label): label is string => typeof label === 'string').map((label) => label.trim().slice(0, 40)).slice(0, 3)
-      : [];
+    const plan = siteImagePlan({
+      businessName: body.businessName ?? '',
+      businessType: body.businessType ?? '',
+      labels: body.labels,
+    });
 
-    if (!businessName) {
+    if (!plan) {
       return NextResponse.json({ error: 'Unesite naziv biznisa pre generisanja slika.' }, { status: 400 });
     }
 
-    const base = hash(`${businessName}|${businessType}`);
-    const style = 'professional commercial photography, bright natural light, clean modern look, no people, no text, no watermark';
-    const galleryLabels = labels.length > 0 ? labels : ['Naš rad', 'Prostor', 'Detalji'];
-
-    return NextResponse.json({
-      hero: imageUrl(`${businessType}, interior and atmosphere, wide shot, ${style}`, base + 11, 1280, 720),
-      gallery: galleryLabels.map((label, index) => ({
-        label,
-        url: imageUrl(`${businessType}, ${label.toLowerCase()}, close up detail, ${style}`, base + 101 + index * 17, 900, 675),
-      })),
-    });
+    return NextResponse.json(plan);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Nepoznata greška.';
     console.error('AI images error:', message);

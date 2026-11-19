@@ -1,10 +1,13 @@
 import BookingForm from '../blocks/booking-form';
 import { LogoMark } from '../blocks/site-parts';
+import { GalleryPlaceholder, SiteImage } from '../blocks/site-image';
+import { SiteIcon, siteIconFor } from '../blocks/site-icons';
 import {
   bookingCopy,
   durationLabel,
   mapsEmbedLink,
   mapsSearchLink,
+  paletteOf,
   whatsappLink,
   type LayoutProps,
 } from '../blocks/site-types';
@@ -16,12 +19,14 @@ export default function PortfolioLayout({ draft, bookings, onBooking, bookingMes
   const copy = bookingCopy[draft.bookingType];
   const waLink = whatsappLink(draft.phone, `Zdravo, zanima me termin u ${draft.businessName}.`);
   const heights = ['aspect-[3/4]', 'aspect-square', 'aspect-[4/5]'];
+  const p = paletteOf(draft.accentColor);
+  const icon = siteIconFor(draft);
 
   const wrapperClass = variant === 'page'
-    ? 'mx-auto min-h-screen w-full bg-white'
-    : 'mx-auto min-h-[740px] max-w-[980px] overflow-hidden bg-white shadow-lg';
+    ? 'site-font mx-auto min-h-screen w-full bg-white'
+    : 'site-font mx-auto min-h-[740px] max-w-[980px] overflow-hidden bg-white shadow-lg';
 
-  return <div className={wrapperClass} style={{ '--site-accent': draft.accentColor } as React.CSSProperties}>
+  return <div className={wrapperClass} style={{ '--site-accent': p.accent, '--site-sans': 'var(--font-instrument)' } as React.CSSProperties}>
     <header className="border-b border-slate-100">
       <div className="flex items-center justify-between gap-4 px-6 py-4 sm:px-9">
         <a href="#site-top" className="flex items-center gap-2.5">
@@ -42,7 +47,7 @@ export default function PortfolioLayout({ draft, bookings, onBooking, bookingMes
     </header>
 
     {visible('hero') && <section id="site-top" className="px-6 pb-8 pt-10 sm:px-9 sm:pb-10 sm:pt-12">
-      <p className="text-[9px] font-bold uppercase tracking-[0.3em]" style={{ color: draft.accentColor }}>{draft.icon} {draft.businessType || 'Portfolio'}</p>
+      <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.3em]" style={{ color: p.accent }}><SiteIcon name={icon} className="h-3 w-3" /> {draft.businessType || 'Portfolio'}</p>
       <h1 className="mt-3 max-w-2xl text-3xl font-black leading-[1.05] tracking-tight text-slate-950 sm:text-5xl">{draft.tagline || 'Vaša poruka dobrodošlice'}</h1>
       <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
         <p className="max-w-md text-xs leading-6 text-slate-500">{draft.description}</p>
@@ -57,12 +62,8 @@ export default function PortfolioLayout({ draft, bookings, onBooking, bookingMes
       <div className="columns-2 gap-3 sm:columns-3">
         {draft.gallery.map((item, index) => (
           <figure key={`${item.label}-${index}`} className="mb-3 break-inside-avoid">
-            <div className={`group relative w-full overflow-hidden bg-slate-100 ${heights[index % heights.length]}`}>
-              {item.imageUrl ? (
-                <img src={item.imageUrl} alt={item.label} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]" />
-              ) : (
-                <div className="flex h-full items-center justify-center text-4xl opacity-70">{item.emoji}</div>
-              )}
+            <div className={`group relative w-full overflow-hidden ${heights[index % heights.length]}`} style={{ backgroundColor: p.tint }}>
+              <SiteImage src={item.imageUrl} alt={item.label} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]" fallback={<GalleryPlaceholder label={item.label} icon={icon} accent={p.accent} />} />
             </div>
             <figcaption className="mt-1.5 text-[8px] font-bold uppercase tracking-[0.18em] text-slate-400">{item.label}</figcaption>
           </figure>
@@ -106,7 +107,7 @@ export default function PortfolioLayout({ draft, bookings, onBooking, bookingMes
       </div>
     </section>}
 
-    {visible('reviews') && <section id="site-reviews" className="border-t border-slate-100 bg-[#fafafa] px-6 py-10 sm:px-9">
+    {visible('reviews') && <section id="site-reviews" className="border-t border-slate-100 px-6 py-10 sm:px-9" style={{ backgroundColor: p.tint }}>
       <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-slate-400">Utisci</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
         {draft.reviews.map((review, index) => (
@@ -190,22 +191,26 @@ export default function PortfolioLayout({ draft, bookings, onBooking, bookingMes
       </div>
     </section>}
 
-    {visible('contact') && <section id="site-contact" className="border-t border-slate-100 px-6 py-10 sm:px-9">
+    {visible('contact') && <section id="site-contact" className="px-6 py-10 sm:px-9" style={{ backgroundColor: p.deep, color: p.onDeep }}>
       <div className="grid gap-5 sm:grid-cols-[1.3fr_0.7fr] sm:items-end">
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-slate-400">Kontakt</p>
-          <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">Posetite nas ili pozovite.</h2>
-          <p className="mt-1 text-xs text-slate-500">{draft.address}</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.24em] opacity-60">Kontakt</p>
+          <h2 className="mt-1 text-xl font-black tracking-tight">Posetite nas ili pozovite.</h2>
+          <p className="mt-1 text-xs opacity-60">{draft.address}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <a href={`tel:${draft.phone.replace(/[^+\d]/g, '')}`} className="rounded-full px-4 py-2.5 text-[10px] font-bold text-white" style={{ backgroundColor: draft.accentColor }}>Pozovi</a>
+          <a href={`tel:${draft.phone.replace(/[^+\d]/g, '')}`} className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-[10px] font-bold" style={{ color: p.deep }}>
+            <SiteIcon name="phone" className="h-3 w-3" /> Pozovi
+          </a>
           {waLink && <a href={waLink} target="_blank" rel="noreferrer" className="rounded-full bg-[#25D366] px-4 py-2.5 text-[10px] font-bold text-white">WhatsApp</a>}
-          <a href={`mailto:${draft.email}`} className="rounded-full border border-slate-200 px-4 py-2.5 text-[10px] font-bold text-slate-700">Email</a>
+          <a href={`mailto:${draft.email}`} className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[10px] font-bold" style={{ color: p.onDeep, boxShadow: `inset 0 0 0 1px ${p.onDeep}33` }}>
+            <SiteIcon name="mail" className="h-3 w-3" /> Email
+          </a>
         </div>
       </div>
     </section>}
 
-    <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-6 py-5 text-[8px] font-bold uppercase tracking-[0.2em] text-slate-400 sm:px-9">
+    <footer className="flex flex-wrap items-center justify-between gap-2 px-6 py-5 text-[8px] font-bold uppercase tracking-[0.2em] sm:px-9" style={{ backgroundColor: p.deep, color: `${p.onDeep}80` }}>
       <span>© {new Date().getFullYear()} {draft.businessName}</span>
       <span>DiV.ai</span>
     </footer>

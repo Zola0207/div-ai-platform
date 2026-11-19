@@ -1,11 +1,14 @@
 import BookingForm from '../blocks/booking-form';
 import { LogoMark } from '../blocks/site-parts';
+import { GalleryPlaceholder, SiteImage } from '../blocks/site-image';
+import { SiteIcon, siteIconFor } from '../blocks/site-icons';
 import {
   accentOnDark,
   averageRating,
   bookingCopy,
   mapsEmbedLink,
   mapsSearchLink,
+  paletteOf,
   whatsappLink,
   type LayoutProps,
 } from '../blocks/site-types';
@@ -16,19 +19,21 @@ export default function PremiumLayout({ draft, bookings, onBooking, bookingMessa
   const visible = (id: (typeof draft.visibleBlocks)[number]) => draft.visibleBlocks.includes(id);
   const copy = bookingCopy[draft.bookingType];
   const waLink = whatsappLink(draft.phone, `Zdravo, zanima me termin u ${draft.businessName}.`);
+  const p = paletteOf(draft.accentColor);
   const gold = accentOnDark(draft.accentColor);
   const rating = averageRating(draft.reviews);
+  const icon = siteIconFor(draft);
 
   const wrapperClass = variant === 'page'
-    ? 'mx-auto min-h-screen w-full bg-[#12110f]'
-    : 'mx-auto min-h-[740px] max-w-[980px] overflow-hidden bg-[#12110f] shadow-lg';
+    ? 'site-font mx-auto min-h-screen w-full bg-[#12110f]'
+    : 'site-font mx-auto min-h-[740px] max-w-[980px] overflow-hidden bg-[#12110f] shadow-lg';
 
-  return <div className={wrapperClass} style={{ '--site-accent': draft.accentColor } as React.CSSProperties}>
+  return <div className={wrapperClass} style={{ '--site-accent': p.accent, '--site-serif': 'var(--font-cormorant)' } as React.CSSProperties}>
     <header className="border-b border-white/10">
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-6 py-5 sm:px-10">
         <a href="#site-top" className="flex items-center gap-3">
           <LogoMark draft={draft} rounded="rounded-none" size="sm" />
-          <span className="font-serif text-lg tracking-wide text-[#f6f1e7]">{draft.businessName || 'Naziv vašeg biznisa'}</span>
+          <span className="site-serif text-lg tracking-wide text-[#f6f1e7]">{draft.businessName || 'Naziv vašeg biznisa'}</span>
         </a>
         <nav className="hidden items-center gap-6 text-[9px] font-semibold uppercase tracking-[0.26em] text-white/45 sm:flex">
           {visible('services') && <a href="#site-services" className="transition hover:text-white">Ponuda</a>}
@@ -52,8 +57,8 @@ export default function PremiumLayout({ draft, bookings, onBooking, bookingMessa
         </>
       )}
       <div className="relative mx-auto max-w-3xl px-6 py-16 text-center sm:px-10 sm:py-24">
-        <p className="text-[9px] font-semibold uppercase tracking-[0.4em]" style={{ color: gold }}>{draft.icon} {draft.businessType || 'Dobrodošli'}</p>
-        <h1 className="mt-6 font-serif text-3xl leading-[1.15] tracking-tight text-[#f8f3e9] sm:text-5xl">{draft.tagline || 'Vaša poruka dobrodošlice'}</h1>
+        <p className="flex items-center justify-center gap-2 text-[9px] font-semibold uppercase tracking-[0.4em]" style={{ color: gold }}><SiteIcon name={icon} className="h-3 w-3" /> {draft.businessType || 'Dobrodošli'}</p>
+        <h1 className="mt-6 site-serif text-3xl leading-[1.15] tracking-tight text-[#f8f3e9] sm:text-5xl">{draft.tagline || 'Vaša poruka dobrodošlice'}</h1>
         <span className="mx-auto mt-7 block h-px w-16" style={{ backgroundColor: gold }} aria-hidden="true" />
         <p className="mx-auto mt-6 max-w-lg text-xs leading-7 text-white/55 sm:text-sm">{draft.description}</p>
         <div className="mt-9 flex flex-wrap justify-center gap-3">
@@ -80,7 +85,7 @@ export default function PremiumLayout({ draft, bookings, onBooking, bookingMessa
       <div className="mx-auto grid max-w-3xl gap-6 px-6 py-12 sm:grid-cols-[auto_1fr] sm:gap-10 sm:px-10">
         <p className="text-[9px] font-semibold uppercase tracking-[0.3em]" style={{ color: gold }}>Naša priča</p>
         <div>
-          <p className="font-serif text-lg leading-8 text-[#efe8dc]">{draft.description}</p>
+          <p className="site-serif text-lg leading-8 text-[#efe8dc]">{draft.description}</p>
           <a href="#site-contact" className="mt-4 inline-block border-b pb-0.5 text-[9px] font-bold uppercase tracking-[0.22em]" style={{ borderColor: gold, color: gold }}>
             Posetite nas <span aria-hidden="true">→</span>
           </a>
@@ -92,15 +97,15 @@ export default function PremiumLayout({ draft, bookings, onBooking, bookingMessa
       <div className="mx-auto max-w-2xl px-6 py-14 sm:px-10">
         <div className="text-center">
           <p className="text-[9px] font-semibold uppercase tracking-[0.3em]" style={{ color: gold }}>Ponuda</p>
-          <h2 className="mt-3 font-serif text-2xl tracking-tight text-[#f8f3e9] sm:text-3xl">Naša ponuda</h2>
+          <h2 className="mt-3 site-serif text-2xl tracking-tight text-[#f8f3e9] sm:text-3xl">Naša ponuda</h2>
         </div>
         <ul className="mt-9">
           {draft.services.map((service, index) => (
             <li key={`${service.name}-${index}`} className="border-b border-white/10 py-4 last:border-b-0">
               <div className="flex items-baseline gap-3">
-                <h3 className="font-serif text-base text-[#f8f3e9]">{service.name || 'Naziv usluge'}</h3>
+                <h3 className="site-serif text-base text-[#f8f3e9]">{service.name || 'Naziv usluge'}</h3>
                 <span className="mb-1 h-px flex-1 border-b border-dotted border-white/20" aria-hidden="true" />
-                <span className="font-serif text-sm whitespace-nowrap" style={{ color: gold }}>{service.price}</span>
+                <span className="site-serif text-sm whitespace-nowrap" style={{ color: gold }}>{service.price}</span>
               </div>
               <p className="mt-1 max-w-md text-[11px] leading-5 text-white/45">{service.description}</p>
             </li>
@@ -114,16 +119,12 @@ export default function PremiumLayout({ draft, bookings, onBooking, bookingMessa
       <div className="mx-auto max-w-4xl px-6 py-14 sm:px-10">
         <div className="text-center">
           <p className="text-[9px] font-semibold uppercase tracking-[0.3em]" style={{ color: gold }}>Ambijent</p>
-          <h2 className="mt-3 font-serif text-2xl tracking-tight text-[#f8f3e9]">Galerija</h2>
+          <h2 className="mt-3 site-serif text-2xl tracking-tight text-[#f8f3e9]">Galerija</h2>
         </div>
         <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {draft.gallery.map((item, index) => (
-            <figure key={`${item.label}-${index}`} className="group relative aspect-[4/5] overflow-hidden border border-white/10 bg-white/[0.03]">
-              {item.imageUrl ? (
-                <img src={item.imageUrl} alt={item.label} loading="lazy" className="h-full w-full object-cover opacity-90 transition duration-700 group-hover:scale-105 group-hover:opacity-100" />
-              ) : (
-                <div className="flex h-full items-center justify-center text-3xl opacity-60">{item.emoji}</div>
-              )}
+            <figure key={`${item.label}-${index}`} className="group relative aspect-[4/5] overflow-hidden border border-white/10" style={{ backgroundColor: `${p.accent}0d` }}>
+              <SiteImage src={item.imageUrl} alt={item.label} className="h-full w-full object-cover opacity-90 transition duration-700 group-hover:scale-105 group-hover:opacity-100" fallback={<GalleryPlaceholder label={item.label} icon={icon} accent={p.accent} tone="dark" />} />
               <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2 text-[8px] font-semibold uppercase tracking-[0.2em] text-white/70">{item.label}</figcaption>
             </figure>
           ))}
@@ -138,7 +139,7 @@ export default function PremiumLayout({ draft, bookings, onBooking, bookingMessa
           {draft.reviews.map((review, index) => (
             <blockquote key={`${review.name}-${index}`}>
               <p className="text-[10px] tracking-[0.3em]" style={{ color: gold }}>{'★'.repeat(review.rating)}</p>
-              <p className="mt-3 font-serif text-sm italic leading-7 text-[#efe8dc]">„{review.text}“</p>
+              <p className="mt-3 site-serif text-sm italic leading-7 text-[#efe8dc]">„{review.text}“</p>
               <footer className="mt-3 text-[9px] uppercase tracking-[0.22em] text-white/40">{review.name}</footer>
             </blockquote>
           ))}
@@ -148,11 +149,11 @@ export default function PremiumLayout({ draft, bookings, onBooking, bookingMessa
 
     {visible('faq') && <section className="border-b border-white/10">
       <div className="mx-auto max-w-2xl px-6 py-12 sm:px-10">
-        <h2 className="text-center font-serif text-2xl tracking-tight text-[#f8f3e9]">Česta pitanja</h2>
+        <h2 className="text-center site-serif text-2xl tracking-tight text-[#f8f3e9]">Česta pitanja</h2>
         <div className="mt-6 border-t border-white/10">
           {draft.faq.map((item, index) => (
             <details key={`${item.question}-${index}`} className="group border-b border-white/10 py-3">
-              <summary className="flex cursor-pointer items-center justify-between gap-3 font-serif text-sm text-[#efe8dc]">
+              <summary className="flex cursor-pointer items-center justify-between gap-3 site-serif text-sm text-[#efe8dc]">
                 {item.question}
                 <span className="text-white/30 transition group-open:rotate-45" aria-hidden="true">+</span>
               </summary>
@@ -167,14 +168,14 @@ export default function PremiumLayout({ draft, bookings, onBooking, bookingMessa
       <div className="mx-auto grid max-w-2xl gap-6 px-6 py-12 sm:grid-cols-2 sm:px-10">
         <div>
           <p className="text-[9px] font-semibold uppercase tracking-[0.3em]" style={{ color: gold }}>Radno vreme</p>
-          <h2 className="mt-3 font-serif text-2xl tracking-tight text-[#f8f3e9]">Kada nas nađete</h2>
+          <h2 className="mt-3 site-serif text-2xl tracking-tight text-[#f8f3e9]">Kada nas nađete</h2>
         </div>
         <dl className="text-[11px]">
           {[['Ponedeljak – petak', draft.hours.weekdays], ['Subota', draft.hours.saturday], ['Nedelja', draft.hours.sunday]].map(([day, time]) => (
             <div key={day} className="flex items-baseline gap-3 border-b border-white/10 py-2.5 last:border-b-0">
               <dt className="uppercase tracking-[0.18em] text-white/40">{day}</dt>
               <span className="mb-1 h-px flex-1 border-b border-dotted border-white/15" aria-hidden="true" />
-              <dd className="font-serif text-sm text-[#f8f3e9]">{time}</dd>
+              <dd className="site-serif text-sm text-[#f8f3e9]">{time}</dd>
             </div>
           ))}
         </dl>
@@ -185,7 +186,7 @@ export default function PremiumLayout({ draft, bookings, onBooking, bookingMessa
       <div className="mx-auto max-w-2xl px-6 py-14 sm:px-10">
         <div className="text-center">
           <p className="text-[9px] font-semibold uppercase tracking-[0.3em]" style={{ color: gold }}>Rezervacija</p>
-          <h2 className="mt-3 font-serif text-2xl tracking-tight text-[#f8f3e9] sm:text-3xl">{copy.hero}</h2>
+          <h2 className="mt-3 site-serif text-2xl tracking-tight text-[#f8f3e9] sm:text-3xl">{copy.hero}</h2>
           <p className="mt-2 text-[11px] leading-6 text-white/45">{copy.section}. Potvrdu dobijate telefonom.</p>
         </div>
         <BookingForm
@@ -204,7 +205,7 @@ export default function PremiumLayout({ draft, bookings, onBooking, bookingMessa
       <div className="mx-auto grid max-w-3xl gap-6 px-6 py-12 sm:grid-cols-2 sm:items-center sm:px-10">
         <div>
           <p className="text-[9px] font-semibold uppercase tracking-[0.3em]" style={{ color: gold }}>Lokacija</p>
-          <h2 className="mt-3 font-serif text-2xl tracking-tight text-[#f8f3e9]">Gde se nalazimo</h2>
+          <h2 className="mt-3 site-serif text-2xl tracking-tight text-[#f8f3e9]">Gde se nalazimo</h2>
           <p className="mt-3 text-[11px] leading-6 text-white/50">{draft.address || 'Unesite adresu da bi se prikazala mapa.'}</p>
           {draft.address && (
             <a href={mapsSearchLink(draft.address)} target="_blank" rel="noreferrer" className="mt-4 inline-block border-b pb-0.5 text-[9px] font-bold uppercase tracking-[0.22em]" style={{ borderColor: gold, color: gold }}>
@@ -225,8 +226,8 @@ export default function PremiumLayout({ draft, bookings, onBooking, bookingMessa
     {visible('contact') && <section id="site-contact" className="border-b border-white/10">
       <div className="mx-auto max-w-3xl px-6 py-14 text-center sm:px-10">
         <p className="text-[9px] font-semibold uppercase tracking-[0.3em]" style={{ color: gold }}>Kontakt</p>
-        <h2 className="mt-3 font-serif text-2xl tracking-tight text-[#f8f3e9]">Posetite nas ili pozovite.</h2>
-        <a href={`tel:${draft.phone.replace(/[^+\d]/g, '')}`} className="mt-4 inline-block font-serif text-3xl tracking-tight text-[#f8f3e9] transition hover:opacity-70 sm:text-4xl">
+        <h2 className="mt-3 site-serif text-2xl tracking-tight text-[#f8f3e9]">Posetite nas ili pozovite.</h2>
+        <a href={`tel:${draft.phone.replace(/[^+\d]/g, '')}`} className="mt-4 inline-block site-serif text-3xl tracking-tight text-[#f8f3e9] transition hover:opacity-70 sm:text-4xl">
           {draft.phone}
         </a>
         <p className="mt-2 text-[11px] text-white/45">{draft.address}</p>

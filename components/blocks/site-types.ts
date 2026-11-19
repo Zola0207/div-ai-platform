@@ -205,6 +205,53 @@ export function accentOnDark(hex: string): string {
   return isLightColor(hex) ? hex : lightenColor(hex, 0.5);
 }
 
+function channels(hex: string): [number, number, number] | null {
+  const value = hex.replace('#', '');
+  if (value.length !== 6) return null;
+  const parsed = [0, 2, 4].map((offset) => parseInt(value.slice(offset, offset + 2), 16));
+  return parsed.some((channel) => Number.isNaN(channel)) ? null : (parsed as [number, number, number]);
+}
+
+// Mešanje dve boje. `amount` je udeo druge boje (0 = prva, 1 = druga).
+export function mixColor(from: string, to: string, amount: number): string {
+  const a = channels(from);
+  const b = channels(to);
+  if (!a || !b) return from;
+  const mix = (index: 0 | 1 | 2) => Math.round(a[index] + (b[index] - a[index]) * amount).toString(16).padStart(2, '0');
+  return `#${mix(0)}${mix(1)}${mix(2)}`;
+}
+
+// Iz jedne akcentne boje izvodimo celu paletu. Bez ovoga sajtovi izgledaju
+// kao „bela strana sa jednom obojenom dugmetom“: nemaju tonirane sekcije,
+// meke granice ni tamne CTA blokove.
+export type SitePalette = {
+  accent: string;
+  onAccent: string;
+  tint: string;
+  wash: string;
+  line: string;
+  soft: string;
+  deep: string;
+  onDeep: string;
+  glow: string;
+};
+
+export function paletteOf(hex: string): SitePalette {
+  const accent = channels(hex) ? hex : '#4f46e5';
+  const deep = mixColor(accent, '#0c1015', 0.8);
+  return {
+    accent,
+    onAccent: contrastText(accent),
+    tint: mixColor(accent, '#ffffff', 0.94),
+    wash: mixColor(accent, '#ffffff', 0.87),
+    line: mixColor(accent, '#ffffff', 0.7),
+    soft: mixColor(accent, '#ffffff', 0.5),
+    deep,
+    onDeep: contrastText(deep),
+    glow: `${accent}1f`,
+  };
+}
+
 export function averageRating(reviews: Review[]): number | null {
   if (reviews.length === 0) return null;
   const sum = reviews.reduce((total, review) => total + review.rating, 0);

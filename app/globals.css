@@ -12,6 +12,20 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Tipografija sajta se postavlja po dizajnu preko --site-sans / --site-serif,
+   a ove dve klase je primenjuju. Tako svi layouti mogu da koriste iste
+   klase, a da svaki izgleda drugačije. */
+@utility site-font {
+  font-family: var(--site-sans, var(--font-geist-sans)), ui-sans-serif, system-ui, sans-serif;
+  font-kerning: normal;
+}
+
+@utility site-serif {
+  font-family: var(--site-serif, ui-serif, Georgia, serif);
+  font-kerning: normal;
+}
+
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;

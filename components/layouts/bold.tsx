@@ -1,5 +1,7 @@
 import BookingForm from '../blocks/booking-form';
 import { LogoMark } from '../blocks/site-parts';
+import { GalleryPlaceholder, SiteImage } from '../blocks/site-image';
+import { SiteIcon, siteIconFor } from '../blocks/site-icons';
 import {
   accentOnDark,
   averageRating,
@@ -8,6 +10,7 @@ import {
   durationLabel,
   mapsEmbedLink,
   mapsSearchLink,
+  paletteOf,
   whatsappLink,
   type LayoutProps,
 } from '../blocks/site-types';
@@ -21,6 +24,8 @@ export default function BoldLayout({ draft, bookings, onBooking, bookingMessage,
   const rating = averageRating(draft.reviews);
   const onAccent = contrastText(draft.accentColor);
   const onDark = accentOnDark(draft.accentColor);
+  const p = paletteOf(draft.accentColor);
+  const icon = siteIconFor(draft);
 
   const stats = [
     { value: String(draft.services.length).padStart(2, '0'), label: 'usluga u ponudi' },
@@ -29,11 +34,11 @@ export default function BoldLayout({ draft, bookings, onBooking, bookingMessage,
   ];
 
   const wrapperClass = variant === 'page'
-    ? 'mx-auto min-h-screen w-full bg-white'
-    : 'mx-auto min-h-[740px] max-w-[980px] overflow-hidden bg-white shadow-lg';
+    ? 'site-font mx-auto min-h-screen w-full bg-white'
+    : 'site-font mx-auto min-h-[740px] max-w-[980px] overflow-hidden bg-white shadow-lg';
 
-  return <div className={wrapperClass} style={{ '--site-accent': draft.accentColor } as React.CSSProperties}>
-    <header className="bg-slate-950 text-white">
+  return <div className={wrapperClass} style={{ '--site-accent': p.accent, '--site-sans': 'var(--font-archivo)' } as React.CSSProperties}>
+    <header className="text-white" style={{ backgroundColor: p.deep }}>
       <div className="flex items-center justify-between gap-4 px-6 py-4 sm:px-10">
         <a href="#site-top" className="flex items-center gap-3">
           <LogoMark draft={draft} rounded="rounded-none" size="sm" />
@@ -58,15 +63,15 @@ export default function BoldLayout({ draft, bookings, onBooking, bookingMessage,
         <img src={draft.heroImageUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-20" />
       )}
       <div className="relative px-6 pb-10 pt-12 sm:px-10 sm:pb-12 sm:pt-16">
-        <p className="text-[9px] font-black uppercase tracking-[0.32em] opacity-70">{draft.icon} {draft.businessType || 'Dobrodošli'}</p>
+        <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.32em] opacity-70"><SiteIcon name={icon} className="h-3.5 w-3.5" /> {draft.businessType || 'Dobrodošli'}</p>
         <h1 className="mt-4 max-w-2xl text-4xl font-black uppercase leading-[0.92] tracking-tight sm:text-6xl">
           {draft.tagline || 'Vaša poruka dobrodošlice'}
         </h1>
         <p className="mt-5 max-w-lg text-xs font-medium leading-6 opacity-80 sm:text-sm">{draft.description}</p>
         <div className="mt-8 flex flex-wrap items-center gap-2">
           {visible('booking') && (
-            <a href="#site-booking" className="bg-slate-950 px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-slate-800">
-              {copy.hero} <span aria-hidden="true">→</span>
+            <a href="#site-booking" className="px-5 py-3.5 text-[10px] font-black uppercase tracking-[0.18em] transition hover:opacity-90" style={{ backgroundColor: p.deep, color: p.onDeep }}>
+              {copy.hero} <SiteIcon name="arrowRight" className="inline h-3 w-3" />
             </a>
           )}
           {visible('services') && (
@@ -99,7 +104,7 @@ export default function BoldLayout({ draft, bookings, onBooking, bookingMessage,
       </div>
     </section>}
 
-    {visible('services') && <section id="site-services" className="bg-slate-950 px-6 py-12 text-white sm:px-10">
+    {visible('services') && <section id="site-services" className="px-6 py-12 text-white sm:px-10" style={{ backgroundColor: p.deep }}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[9px] font-black uppercase tracking-[0.28em] text-white/40">02 — Ponuda</p>
@@ -135,13 +140,9 @@ export default function BoldLayout({ draft, bookings, onBooking, bookingMessage,
       </div>
       <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {draft.gallery.map((item, index) => (
-          <div key={`${item.label}-${index}`} className="group relative aspect-square overflow-hidden bg-slate-100">
-            {item.imageUrl ? (
-              <img src={item.imageUrl} alt={item.label} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-            ) : (
-              <div className="flex h-full items-center justify-center text-3xl">{item.emoji}</div>
-            )}
-            <span className="absolute inset-x-0 bottom-0 bg-slate-950/80 px-3 py-2 text-[9px] font-black uppercase tracking-[0.16em] text-white">{item.label}</span>
+          <div key={`${item.label}-${index}`} className="group relative aspect-square overflow-hidden" style={{ backgroundColor: p.tint }}>
+            <SiteImage src={item.imageUrl} alt={item.label} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" fallback={<GalleryPlaceholder label={item.label} icon={icon} accent={p.accent} />} />
+            <span className="absolute inset-x-0 bottom-0 px-3 py-2 text-[9px] font-black uppercase tracking-[0.16em] text-white" style={{ backgroundColor: `${p.deep}e6` }}>{item.label}</span>
           </div>
         ))}
       </div>
@@ -195,7 +196,7 @@ export default function BoldLayout({ draft, bookings, onBooking, bookingMessage,
       </div>
     </section>}
 
-    {visible('booking') && <section id="site-booking" className="relative overflow-hidden bg-slate-950 px-6 py-12 text-white sm:px-10">
+    {visible('booking') && <section id="site-booking" className="relative overflow-hidden px-6 py-12 text-white sm:px-10" style={{ backgroundColor: p.deep }}>
       <div className="absolute right-0 top-0 h-32 w-32" style={{ backgroundColor: draft.accentColor, opacity: 0.15 }} aria-hidden="true" />
       <div className="relative grid gap-8 sm:grid-cols-[0.8fr_1.2fr]">
         <div>
@@ -243,14 +244,14 @@ export default function BoldLayout({ draft, bookings, onBooking, bookingMessage,
           <p className="mt-1 text-[11px] opacity-80">{draft.address}</p>
         </div>
         <div className="flex flex-col gap-2">
-          <a href={`tel:${draft.phone.replace(/[^+\d]/g, '')}`} className="bg-slate-950 px-4 py-3 text-center text-[10px] font-black uppercase tracking-[0.18em] text-white">Pozovi odmah</a>
+          <a href={`tel:${draft.phone.replace(/[^+\d]/g, '')}`} className="px-4 py-3 text-center text-[10px] font-black uppercase tracking-[0.18em]" style={{ backgroundColor: p.deep, color: p.onDeep }}>Pozovi odmah</a>
           {waLink && <a href={waLink} target="_blank" rel="noreferrer" className="border px-4 py-3 text-center text-[10px] font-black uppercase tracking-[0.18em]" style={{ borderColor: `${onAccent}55`, color: onAccent }}>WhatsApp</a>}
           <a href={`mailto:${draft.email}`} className="border px-4 py-3 text-center text-[10px] font-black uppercase tracking-[0.18em]" style={{ borderColor: `${onAccent}55`, color: onAccent }}>Pošalji email</a>
         </div>
       </div>
     </section>}
 
-    <footer className="flex flex-wrap items-center justify-between gap-2 bg-slate-950 px-6 py-4 text-[9px] uppercase tracking-[0.16em] text-white/40 sm:px-10">
+    <footer className="flex flex-wrap items-center justify-between gap-2 px-6 py-4 text-[9px] uppercase tracking-[0.16em] text-white/40 sm:px-10" style={{ backgroundColor: p.deep }}>
       <span>© {new Date().getFullYear()} {draft.businessName}</span>
       <span>Izrađeno uz DiV.ai</span>
     </footer>

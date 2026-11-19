@@ -1,10 +1,13 @@
 import BookingForm from '../blocks/booking-form';
 import { HoursRow, LogoMark } from '../blocks/site-parts';
+import { GalleryPlaceholder, SiteImage } from '../blocks/site-image';
+import { SiteIcon, siteIconFor } from '../blocks/site-icons';
 import {
   bookingCopy,
   durationLabel,
   mapsEmbedLink,
   mapsSearchLink,
+  paletteOf,
   whatsappLink,
   type LayoutProps,
 } from '../blocks/site-types';
@@ -17,16 +20,18 @@ export default function UtilityLayout({ draft, bookings, onBooking, bookingMessa
   const copy = bookingCopy[draft.bookingType];
   const waLink = whatsappLink(draft.phone, `Zdravo, potrebna mi je usluga — ${draft.businessName}.`);
   const tel = `tel:${draft.phone.replace(/[^+\d]/g, '')}`;
+  const p = paletteOf(draft.accentColor);
+  const icon = siteIconFor(draft);
 
   const wrapperClass = variant === 'page'
-    ? 'mx-auto min-h-screen w-full bg-[#fbfbf9] pb-16 sm:pb-0'
-    : 'mx-auto min-h-[740px] max-w-[980px] overflow-hidden bg-[#fbfbf9] shadow-lg';
+    ? 'site-font mx-auto min-h-screen w-full pb-16 sm:pb-0'
+    : 'site-font mx-auto min-h-[740px] max-w-[980px] overflow-hidden shadow-lg';
 
   // Lepljiva traka i mobilna traka za poziv imaju smisla samo na pravoj strani —
   // u pregledu uređivača bi prekrile sam uređivač.
   const topBarClass = variant === 'page' ? 'sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur' : 'border-b border-slate-200 bg-white';
 
-  return <div className={wrapperClass} style={{ '--site-accent': draft.accentColor } as React.CSSProperties}>
+  return <div className={wrapperClass} style={{ '--site-accent': p.accent, '--site-sans': 'var(--font-plex)', backgroundColor: p.tint } as React.CSSProperties}>
     <div className={topBarClass}>
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-8">
         <a href="#site-top" className="flex min-w-0 items-center gap-2.5">
@@ -49,14 +54,14 @@ export default function UtilityLayout({ draft, bookings, onBooking, bookingMessa
       <div className="mx-auto grid max-w-5xl gap-6 px-4 py-8 sm:grid-cols-[1.25fr_0.75fr] sm:px-8 sm:py-10">
         <div>
           <p className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-slate-500">
-            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: draft.accentColor }} />
-            {draft.icon} {draft.businessType || 'Dostupni smo danas'}
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: p.accent }} />
+            <SiteIcon name={icon} className="h-3 w-3" style={{ color: p.accent }} /> {draft.businessType || 'Dostupni smo danas'}
           </p>
           <h1 className="mt-4 text-3xl font-black leading-[1.06] tracking-tight text-slate-950 sm:text-[42px]">{draft.tagline || 'Vaša poruka dobrodošlice'}</h1>
           <p className="mt-3 max-w-lg text-xs leading-6 text-slate-600 sm:text-[13px]">{draft.description}</p>
           <div className="mt-6 flex flex-wrap items-stretch gap-2">
-            <a href={tel} className="flex items-center gap-2 px-5 py-3.5 text-[11px] font-black text-white" style={{ backgroundColor: draft.accentColor }}>
-              <span aria-hidden="true">☎</span> {draft.phone}
+            <a href={tel} className="flex items-center gap-2 px-5 py-3.5 text-[11px] font-black text-white" style={{ backgroundColor: p.accent, color: p.onAccent }}>
+              <SiteIcon name="phone" className="h-4 w-4" /> {draft.phone}
             </a>
             {visible('booking') && (
               <a href="#site-booking" className="flex items-center gap-2 border border-slate-300 px-5 py-3.5 text-[11px] font-black text-slate-900 transition hover:border-slate-900">
@@ -70,7 +75,7 @@ export default function UtilityLayout({ draft, bookings, onBooking, bookingMessa
             )}
           </div>
         </div>
-        <div className="border border-slate-200 bg-[#fbfbf9] p-4">
+        <div className="border border-slate-200 p-4" style={{ backgroundColor: p.tint }}>
           <p className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-400">Brze informacije</p>
           <dl className="mt-2 divide-y divide-slate-200 text-[11px]">
             <div className="flex items-baseline justify-between gap-3 py-2">
@@ -97,7 +102,7 @@ export default function UtilityLayout({ draft, bookings, onBooking, bookingMessa
       </div>
     </section>}
 
-    {visible('services') && <section id="site-services" className="border-b border-slate-200 bg-[#fbfbf9]">
+    {visible('services') && <section id="site-services" className="border-b border-slate-200" style={{ backgroundColor: p.tint }}>
       <div className="mx-auto max-w-5xl px-4 py-9 sm:px-8">
         <div className="flex flex-wrap items-end justify-between gap-2 border-b-2 pb-2" style={{ borderColor: draft.accentColor }}>
           <h2 className="text-lg font-black uppercase tracking-[0.06em] text-slate-950 sm:text-xl">Cenovnik usluga</h2>
@@ -136,17 +141,13 @@ export default function UtilityLayout({ draft, bookings, onBooking, bookingMessa
       </div>
     </section>}
 
-    {visible('gallery') && <section className="border-b border-slate-200 bg-[#fbfbf9]">
+    {visible('gallery') && <section className="border-b border-slate-200" style={{ backgroundColor: p.tint }}>
       <div className="mx-auto max-w-5xl px-4 py-9 sm:px-8">
         <h2 className="text-lg font-black uppercase tracking-[0.06em] text-slate-950">Naši radovi</h2>
         <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
           {draft.gallery.map((item, index) => (
             <figure key={`${item.label}-${index}`} className="relative aspect-square overflow-hidden border border-slate-200 bg-white">
-              {item.imageUrl ? (
-                <img src={item.imageUrl} alt={item.label} loading="lazy" className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full items-center justify-center text-2xl">{item.emoji}</div>
-              )}
+              <SiteImage src={item.imageUrl} alt={item.label} className="h-full w-full object-cover" fallback={<GalleryPlaceholder label={item.label} icon={icon} accent={p.accent} />} />
               <figcaption className="absolute inset-x-0 bottom-0 bg-white/90 px-2 py-1 text-[8px] font-bold uppercase tracking-[0.1em] text-slate-600">{item.label}</figcaption>
             </figure>
           ))}
@@ -169,7 +170,7 @@ export default function UtilityLayout({ draft, bookings, onBooking, bookingMessa
       </div>
     </section>}
 
-    {visible('faq') && <section className="border-b border-slate-200 bg-[#fbfbf9]">
+    {visible('faq') && <section className="border-b border-slate-200" style={{ backgroundColor: p.tint }}>
       <div className="mx-auto max-w-5xl px-4 py-9 sm:px-8">
         <div className="grid gap-4 sm:grid-cols-[0.55fr_1.45fr]">
           <h2 className="text-lg font-black uppercase tracking-[0.06em] text-slate-950">Česta pitanja</h2>
@@ -195,7 +196,7 @@ export default function UtilityLayout({ draft, bookings, onBooking, bookingMessa
           <p className="mt-2 max-w-sm text-[11px] leading-5 text-slate-500">Za hitne intervencije pozovite — trudimo se da izađemo istog dana.</p>
           <a href={tel} className="mt-3 inline-block text-[15px] font-black tracking-tight text-slate-950">{draft.phone}</a>
         </div>
-        <div className="border border-slate-200 bg-[#fbfbf9] p-3 text-[10px]">
+        <div className="border border-slate-200 p-3 text-[10px]" style={{ backgroundColor: p.tint }}>
           <HoursRow day="Ponedeljak – petak" time={draft.hours.weekdays} />
           <HoursRow day="Subota" time={draft.hours.saturday} />
           <HoursRow day="Nedelja" time={draft.hours.sunday} />
@@ -203,7 +204,7 @@ export default function UtilityLayout({ draft, bookings, onBooking, bookingMessa
       </div>
     </section>}
 
-    {visible('booking') && <section id="site-booking" className="border-b border-slate-200" style={{ backgroundColor: `${draft.accentColor}0a` }}>
+    {visible('booking') && <section id="site-booking" className="border-b border-slate-200" style={{ backgroundColor: p.wash }}>
       <div className="mx-auto max-w-4xl px-4 py-9 sm:px-8">
         <div className="border-l-4 pl-3" style={{ borderColor: draft.accentColor }}>
           <h2 className="text-lg font-black uppercase tracking-[0.06em] text-slate-950 sm:text-xl">{copy.hero}</h2>
@@ -240,10 +241,10 @@ export default function UtilityLayout({ draft, bookings, onBooking, bookingMessa
       </div>
     </section>}
 
-    {visible('contact') && <section id="site-contact" className="bg-slate-950">
+    {visible('contact') && <section id="site-contact" style={{ backgroundColor: p.deep }}>
       <div className="mx-auto grid max-w-5xl gap-5 px-4 py-8 sm:grid-cols-[1.2fr_0.8fr] sm:items-center sm:px-8">
         <div>
-          <p className="text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: draft.accentColor }}>Kontakt</p>
+          <p className="text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: p.soft }}>Kontakt</p>
           <a href={tel} className="mt-1 block text-2xl font-black tracking-tight text-white sm:text-3xl">{draft.phone}</a>
           <p className="mt-1 text-[11px] text-white/60">{draft.address} · {draft.email}</p>
         </div>
@@ -255,14 +256,14 @@ export default function UtilityLayout({ draft, bookings, onBooking, bookingMessa
       </div>
     </section>}
 
-    <footer className="flex flex-wrap items-center justify-between gap-2 bg-slate-950 px-4 py-4 text-[9px] text-white/40 sm:px-8">
+    <footer className="flex flex-wrap items-center justify-between gap-2 px-4 py-4 text-[9px] text-white/40 sm:px-8" style={{ backgroundColor: p.deep }}>
       <span>© {new Date().getFullYear()} {draft.businessName}</span>
       <span>Izrađeno uz DiV.ai</span>
     </footer>
 
     {variant === 'page' && (
-      <a href={tel} className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-center gap-2 px-4 py-3.5 text-[11px] font-black uppercase tracking-[0.1em] text-white sm:hidden" style={{ backgroundColor: draft.accentColor }}>
-        <span aria-hidden="true">☎</span> Pozovi {draft.phone}
+      <a href={tel} className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-center gap-2 px-4 py-3.5 text-[11px] font-black uppercase tracking-[0.1em] sm:hidden" style={{ backgroundColor: p.accent, color: p.onAccent }}>
+        <SiteIcon name="phone" className="h-4 w-4" /> Pozovi {draft.phone}
       </a>
     )}
   </div>;
