@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { contrastText, initials } from './blocks/site-types';
+import { siteDomain, siteHost } from '@/lib/site-url';
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -42,8 +43,14 @@ export default function SiteApp({
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('/s/sw.js', { scope: '/s/' }).catch(() => undefined);
-  }, []);
+    // Na sopstvenom poddomenu service worker pokriva ceo sajt (/), a na staroj
+    // putanji /s/<slug> samo taj deo platforme.
+    const onSiteDomain = Boolean(siteHost(slug))
+      && window.location.hostname.toLowerCase().endsWith(`.${siteDomain}`);
+    const worker = onSiteDomain ? '/sw.js' : '/s/sw.js';
+    const scope = onSiteDomain ? '/' : '/s/';
+    navigator.serviceWorker.register(worker, { scope }).catch(() => undefined);
+  }, [slug]);
 
   useEffect(() => {
     const onPrompt = (event: Event) => {

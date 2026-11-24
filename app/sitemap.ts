@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { isServerSupabaseConfigured } from '@/lib/api-auth';
+import { isSiteDomainConfigured } from '@/lib/site-url';
 
 const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://div-ai-platform.vercel.app').replace(/\/$/, '');
 
@@ -30,7 +31,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${appUrl}/uslovi`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
   ];
 
-  const sites = await publishedSites();
+  // Kada su sajtovi na poddomenima, svaki ima svoj sitemap.xml. Cross-host
+  // adrese u platformskom sitemapu nisu dozvoljene.
+  const sites = isSiteDomainConfigured() ? [] : await publishedSites();
   return [
     ...pages,
     ...sites.map((site) => ({

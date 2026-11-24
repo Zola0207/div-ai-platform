@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { siteImagePlan } from '@/lib/site-images';
+import { isImageProviderConfigured, siteImagePlan } from '@/lib/site-images';
 
 type ImagesBody = {
   businessName?: string;
   businessType?: string;
+  categoryId?: string;
   labels?: string[];
 };
 
@@ -36,20 +37,33 @@ export async function POST(req: Request) {
 
   try {
     const body = (await req.json()) as ImagesBody;
-    const plan = siteImagePlan({
-      businessName: body.businessName ?? '',
+    const businessName = (body.businessName ?? '').trim();
+    if (!businessName) {
+      return NextResponse.json({ error: 'Unesite naziv biznisa pre dodavanja fotografija.' }, { status: 400 });
+    }
+
+    if (!isImageProviderConfigured()) {
+      return NextResponse.json(
+        { error: 'Automatske fotografije još nisu povezane. Dodajte ih ručno u uređivaču.', code: 'images_not_configured' },
+        { status: 503 },
+      );
+    }
+
+    const plan = await siteImagePlan({
+      businessName,
       businessType: body.businessType ?? '',
+      categoryId: body.categoryId ?? '',
       labels: body.labels,
     });
 
     if (!plan) {
-      return NextResponse.json({ error: 'Unesite naziv biznisa pre generisanja slika.' }, { status: 400 });
+      return NextResponse.json({ error: 'Fotografije trenutno nisu dostupne. Pokušajte ponovo.' }, { status: 502 });
     }
 
     return NextResponse.json(plan);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Nepoznata greška.';
     console.error('AI images error:', message);
-    return NextResponse.json({ error: 'Slike trenutno nije moguće generisati.' }, { status: 502 });
+    return NextResponse.json({ error: 'Fotografije trenutno nisu dostupne.' }, { status: 502 });
   }
 }

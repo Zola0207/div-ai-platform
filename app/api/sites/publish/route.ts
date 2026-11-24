@@ -1,8 +1,18 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getApiAuth, isServerSupabaseConfigured } from '@/lib/api-auth';
+import { withAutoImages } from '@/lib/site-images';
 
 type PublishBody = { siteId?: string };
+
+type PublishDraft = {
+  slug?: string;
+  businessName?: string;
+  businessType?: string;
+  categoryId?: string;
+  heroImageUrl?: string;
+  gallery?: { label: string; imageUrl?: string }[];
+};
 
 function slugify(value: string): string {
   const map: Record<string, string> = { č: 'c', ć: 'c', ž: 'z', š: 's', đ: 'd' };
@@ -43,8 +53,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Sajt nije pronađen na vašem nalogu.' }, { status: 404 });
     }
 
-    const draft = (site.draft ?? {}) as { slug?: string; businessName?: string };
+    const draft = (site.draft ?? {}) as PublishDraft;
     const base = slugify(draft.slug || site.slug || draft.businessName || site.name || 'sajt');
+
+    // Fotografije se dodaju ovde, na serveru, jer ključ provajdera ne sme u
+    // pregledač. Popunjavamo samo nedostajuće slike i uklanjamo pokvarene.
+    const { draft: ready, added } = await withAutoImages({
+      ...draft,
+      businessName: draft.businessName || site.name || 'Moj sajt',
+      gallery: Array.isArray(draft.gallery) ? draft.gallery : [],
+    });
 
     let candidate = base;
     let suffix = 2;
@@ -65,9 +83,9 @@ export async function POST(req: Request) {
 
     const { data, error } = await admin
       .from('sites')
-      .update({ slug: candidate, status: 'published' })
+      .update({ slug: candidate, status: 'published', draft: ready })
       .eq('id', site.id)
-      .select('slug')
+      .select('slug, draft')
       .single();
 
     if (error) {
@@ -78,7 +96,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Sajt nije moguće objaviti.' }, { status: 500 });
     }
 
-    return NextResponse.json({ slug: data.slug });
+    return NextResponse.json({ slug: data.slug, draft: data.draft, imagesAdded: added });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Nepoznata greška.';
     console.error('Publish API error:', message);

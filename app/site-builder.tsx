@@ -9,7 +9,8 @@ import { SitePreview, LAYOUTS, type LayoutId } from '@/components/site-preview';
 import LeadsPanel, { type LeadItem } from '@/components/leads-panel';
 import AnalyticsPanel from '@/components/analytics-panel';
 import type { SiteRecord } from '@/lib/sites';
-import { withAutoImages } from '@/lib/site-images';
+import { isBrokenImageUrl } from '@/lib/image-urls';
+import { siteUrl, isSiteDomainConfigured } from '@/lib/site-url';
 import { SiteIcon, categoryIcon, siteIconFor, type SiteIconName } from '@/components/blocks/site-icons';
 import AccountScreen from './account-screen';
 import AuthScreen from './auth-screen';
@@ -1192,7 +1193,12 @@ function normalizeDraft(parsed: Partial<SiteDraft>): SiteDraft | null {
     hours: parsed.hours ?? base.hours,
     reviews: parsed.reviews ?? base.reviews,
     faq: parsed.faq ?? base.faq,
-    gallery: parsed.gallery ?? base.gallery,
+    // Stare adrese slika (npr. Pollinations) više nisu upotrebljive — vraćamo
+    // praznu pločicu umesto reklamne slike.
+    heroImageUrl: isBrokenImageUrl(parsed.heroImageUrl) ? undefined : parsed.heroImageUrl,
+    gallery: (parsed.gallery ?? base.gallery).map((item) =>
+      isBrokenImageUrl(item.imageUrl) ? { ...item, imageUrl: undefined } : item,
+    ),
     // Stariji nacrti nemaju trajanje po usluzi — dopunjujemo iz šablona.
     services: Array.isArray(parsed.services) && parsed.services.length > 0
       ? parsed.services.map((service, index) => {
@@ -1221,6 +1227,29 @@ function translateDbError(message: string): string {
   return message;
 }
 
+type SiteImagePlan = { hero?: string; gallery?: { label: string; url?: string }[] };
+
+type DomainInfo = {
+  domain: string;
+  verified: boolean;
+  misconfigured: boolean;
+  cname: string;
+  aRecords: string[];
+};
+
+// Slike popunjavamo samo tamo gde ih nema. Tako „Popuni ceo sajt“ ne briše
+// fotografije koje je korisnik već izabrao ili uploadovao.
+function withImagePlan(source: SiteDraft, plan: SiteImagePlan): SiteDraft {
+  return {
+    ...source,
+    heroImageUrl: source.heroImageUrl || plan.hero,
+    gallery: source.gallery.map((item, index) => {
+      const url = plan.gallery?.[index]?.url;
+      return !url || item.imageUrl ? item : { ...item, imageUrl: url };
+    }),
+  };
+}
+
 export default function SiteBuilder() {
   const { ready: authReady, configured, user, profile, signOut } = useAuth();
   const [screen, setScreen] = useState<Screen>('home');
@@ -1244,6 +1273,17 @@ export default function SiteBuilder() {
   const [aiNotice, setAiNotice] = useState('');
   const [imageBusy, setImageBusy] = useState(false);
   const [imageNotice, setImageNotice] = useState('');
+  const [photoBusy, setPhotoBusy] = useState<string | null>(null);
+  const [photoNotice, setPhotoNotice] = useState('');
+  const [domainInput, setDomainInput] = useState('');
+  const [domainBusy, setDomainBusy] = useState(false);
+  const [domainNotice, setDomainNotice] = useState('');
+  const [domainInfo, setDomainInfo] = useState<DomainInfo | null>(null);
+  // Da li je platforma već povezala svoj domen (tada besplatna adresa ima smisla).
+  const sitesDomainReady = isSiteDomainConfigured();
+  const [siteAiBusy, setSiteAiBusy] = useState(false);
+  const [siteAiStep, setSiteAiStep] = useState<'text' | 'images'>('text');
+  const [siteAiNotice, setSiteAiNotice] = useState('');
 
   const requireAuth = (reason: string, returnTo: Screen) => {
     setAuthReason(reason);
@@ -1288,12 +1328,40 @@ export default function SiteBuilder() {
     return () => { active = false; };
   }, [authReady, user, configured]);
 
+  // Sopstveni domen se čita kad je sajt sačuvan na nalog.
+  useEffect(() => {
+    if (!configured || !user || !cloudSiteId) return;
+
+    let active = true;
+    void (async () => {
+      try {
+        const client = getSupabaseClient();
+        const token = client ? (await client.auth.getSession()).data.session?.access_token : null;
+        if (!token) return;
+        const res = await fetch(`/api/domains?siteId=${encodeURIComponent(cloudSiteId)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = (await res.json()) as { domain?: DomainInfo | null; error?: string };
+        if (!active) return;
+        if (res.ok) setDomainInfo(data.domain ?? null);
+        else if (data.error) setDomainNotice(data.error);
+      } catch {
+        // Domen je dodatak — greška ne sme da blokira uređivač.
+      }
+    })();
+
+    return () => { active = false; };
+  }, [configured, user, cloudSiteId]);
+
   const openDraft = (next: SiteDraft) => {
     setDraft(next);
     setCloudSiteId(null);
     setPublishedSlug(null);
     setBookingMessage('');
     setNotice('');
+    setDomainInfo(null);
+    setDomainInput('');
+    setDomainNotice('');
     setScreen('editor');
   };
 
@@ -1304,7 +1372,8 @@ export default function SiteBuilder() {
     setNotice('');
   };
 
-  const runAiAssistant = async () => {    if (!draft || aiBusy) return;
+  const runAiAssistant = async () => {
+    if (!draft || aiBusy) return;
 
     setAiBusy(true);
     setAiNotice('');
@@ -1349,29 +1418,291 @@ export default function SiteBuilder() {
         body: JSON.stringify({
           businessName: draft.businessName,
           businessType: draft.businessType || presetName(draft.templateId),
+          categoryId: draft.categoryId,
           labels: draft.gallery.map((item) => item.label),
         }),
       });
       const data = (await res.json()) as {
         hero?: string;
-        gallery?: { label: string; url: string }[];
+        gallery?: { label: string; url?: string }[];
         error?: string;
       };
 
       if (!res.ok) {
-        setImageNotice(data.error || 'Slike nisu generisane.');
+        setImageNotice(data.error || 'Fotografije nisu dodate.');
         return;
       }
 
-      if (data.hero) updateDraft('heroImageUrl', data.hero);
+      if (data.hero && !draft.heroImageUrl) updateDraft('heroImageUrl', data.hero);
       if (Array.isArray(data.gallery) && data.gallery.length) {
-        updateDraft('gallery', draft.gallery.map((item, index) => ({ ...item, imageUrl: data.gallery?.[index]?.url })));
+        updateDraft('gallery', draft.gallery.map((item, index) => (item.imageUrl ? item : { ...item, imageUrl: data.gallery?.[index]?.url })));
       }
-      setImageNotice('Slike su dodate. Prvo učitavanje može da potraje nekoliko sekundi.');
+      setImageNotice('Fotografije su dodate. Možete ih zameniti u uređivaču.');
     } catch {
-      setImageNotice('Slike nisu generisane. Pokušajte ponovo.');
+      setImageNotice('Fotografije nisu dodate. Pokušajte ponovo.');
     } finally {
       setImageBusy(false);
+    }
+  };
+
+  const authToken = async (): Promise<string | null> => {
+    const client = getSupabaseClient();
+    return client ? (await client.auth.getSession()).data.session?.access_token ?? null : null;
+  };
+
+  // Brišemo staru fotografiju sa storage-a da ne skuplja prostor. Neuspeh ne
+  // sme da prekine rad u uređivaču, zato je ovo „best effort“.
+  const removeStoredPhoto = async (url?: string) => {
+    if (!url || !configured || !user) return;
+    try {
+      const token = await authToken();
+      if (!token) return;
+      await fetch('/api/uploads', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+    } catch {
+      // Storage je pomoćna stvar — ignorišemo.
+    }
+  };
+
+  const uploadPhoto = async (file: File | undefined, target: 'hero' | number) => {
+    if (!file || !draft || photoBusy) return;
+
+    if (!configured || !user) {
+      requireAuth('Prijavite se da dodate svoju fotografiju.', 'editor');
+      return;
+    }
+
+    if (file.size > 4 * 1024 * 1024) {
+      setPhotoNotice('Fotografija je veća od 4 MB. Smanjite je pa pokušajte ponovo.');
+      return;
+    }
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setPhotoNotice('Dozvoljeni formati su JPG, PNG i WebP.');
+      return;
+    }
+
+    const key = target === 'hero' ? 'hero' : `gallery-${target}`;
+    setPhotoBusy(key);
+    setPhotoNotice('');
+
+    try {
+      const token = await authToken();
+      if (!token) {
+        requireAuth('Prijavite se da dodate svoju fotografiju.', 'editor');
+        return;
+      }
+
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch('/api/uploads', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      const url = data.url;
+      if (!res.ok || !url) {
+        setPhotoNotice(data.error || 'Fotografija nije sačuvana. Pokušajte ponovo.');
+        return;
+      }
+
+      const previous = target === 'hero' ? draft.heroImageUrl : draft.gallery[target]?.imageUrl;
+      setDraft((current) => {
+        if (!current) return current;
+        if (target === 'hero') return { ...current, heroImageUrl: url };
+        return {
+          ...current,
+          gallery: current.gallery.map((item, index) => (index === target ? { ...item, imageUrl: url } : item)),
+        };
+      });
+      void removeStoredPhoto(previous);
+      setPhotoNotice('Fotografija je sačuvana.');
+    } catch {
+      setPhotoNotice('Fotografija nije sačuvana. Pokušajte ponovo.');
+    } finally {
+      setPhotoBusy(null);
+    }
+  };
+
+  const removePhoto = (target: 'hero' | number) => {
+    if (!draft) return;
+    const previous = target === 'hero' ? draft.heroImageUrl : draft.gallery[target]?.imageUrl;
+    setDraft((current) => {
+      if (!current) return current;
+      if (target === 'hero') return { ...current, heroImageUrl: undefined };
+      return {
+        ...current,
+        gallery: current.gallery.map((item, index) => (index === target ? { ...item, imageUrl: undefined } : item)),
+      };
+    });
+    void removeStoredPhoto(previous);
+    setPhotoNotice('Fotografija je uklonjena.');
+  };
+
+  const updateGalleryLabel = (index: number, label: string) => {
+    setDraft((current) => current
+      ? { ...current, gallery: current.gallery.map((item, itemIndex) => (itemIndex === index ? { ...item, label: label.slice(0, 24) } : item)) }
+      : current);
+  };
+
+  const domainCall = async (method: 'GET' | 'POST' | 'DELETE') => {
+    if (!cloudSiteId) return null;
+    const token = await authToken();
+    if (!token) {
+      requireAuth('Prijavite se da povežete sopstveni domen.', 'editor');
+      return null;
+    }
+
+    const endpoint = method === 'GET'
+      ? `/api/domains?siteId=${encodeURIComponent(cloudSiteId)}`
+      : '/api/domains';
+    const res = await fetch(endpoint, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(method === 'GET' ? {} : { 'Content-Type': 'application/json' }),
+      },
+      ...(method === 'GET'
+        ? {}
+        : { body: JSON.stringify(method === 'POST' ? { siteId: cloudSiteId, domain: domainInput.trim() } : { siteId: cloudSiteId }) }),
+    });
+
+    const data = (await res.json()) as { domain?: DomainInfo | null; error?: string; ok?: boolean };
+    if (!res.ok) {
+      setDomainNotice(data.error || 'Domen nije moguće sačuvati.');
+      return null;
+    }
+    return data;
+  };
+
+  const connectDomain = async () => {
+    if (!domainInput.trim() || domainBusy) return;
+    setDomainBusy(true);
+    setDomainNotice('');
+    try {
+      const data = await domainCall('POST');
+      if (!data) return;
+      setDomainInfo(data.domain ?? null);
+      setDomainInput('');
+      setDomainNotice('Domen je dodat. Podesite DNS zapis ispod, pa kliknite „Proveri“.');
+    } catch {
+      setDomainNotice('Domen nije moguće povezati. Pokušajte ponovo.');
+    } finally {
+      setDomainBusy(false);
+    }
+  };
+
+  const refreshDomain = async () => {
+    if (domainBusy) return;
+    setDomainBusy(true);
+    setDomainNotice('');
+    try {
+      const data = await domainCall('GET');
+      if (!data) return;
+      setDomainInfo(data.domain ?? null);
+      setDomainNotice(data.domain?.verified && !data.domain.misconfigured
+        ? 'Domen je aktivan. Sajt se otvara na vašoj adresi.'
+        : 'DNS još nije aktivan. Provera može da potraje do nekoliko sati.');
+    } catch {
+      setDomainNotice('Provera domena nije uspela. Pokušajte ponovo.');
+    } finally {
+      setDomainBusy(false);
+    }
+  };
+
+  const disconnectDomain = async () => {
+    if (domainBusy) return;
+    setDomainBusy(true);
+    setDomainNotice('');
+    try {
+      const data = await domainCall('DELETE');
+      if (!data) return;
+      setDomainInfo(null);
+      setDomainNotice('Domen je uklonjen. Sajt i dalje radi na besplatnoj adresi.');
+    } catch {
+      setDomainNotice('Domen nije moguće ukloniti. Pokušajte ponovo.');
+    } finally {
+      setDomainBusy(false);
+    }
+  };
+
+  // Jedan klik = ceo sajt. Prvo tekstovi, pa slike, pa sve odjednom u nacrt.
+  // Ako AI padne na tekstovima, ništa se ne menja; ako padnu slike, tekstovi
+  // ostaju sačuvani i korisnik može da pokuša samo slike.
+  const runSiteAi = async () => {
+    if (!draft || siteAiBusy) return;
+
+    setSiteAiBusy(true);
+    setSiteAiNotice('');
+    setAiNotice('');
+    setImageNotice('');
+
+    try {
+      setSiteAiStep('text');
+      const textRes = await fetch('/api/ai/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessName: draft.businessName,
+          businessType: draft.businessType || presetName(draft.templateId),
+          bookingType: bookingTypes.find((type) => type.id === draft.bookingType)?.label ?? draft.bookingType,
+        }),
+      });
+      const text = (await textRes.json()) as Partial<AiSiteContent> & { error?: string };
+      if (!textRes.ok) {
+        setSiteAiNotice(text.error || 'AI trenutno nije dostupan.');
+        return;
+      }
+
+      const labels = Array.isArray(text.galleryLabels) ? text.galleryLabels : [];
+      let next: SiteDraft = {
+        ...draft,
+        tagline: text.tagline?.trim() || draft.tagline,
+        description: text.description?.trim() || draft.description,
+        services: Array.isArray(text.services) && text.services.length
+          ? text.services.map((service, index) => ({
+              ...service,
+              durationMinutes: draft.services[index]?.durationMinutes,
+              durationDays: draft.services[index]?.durationDays,
+            }))
+          : draft.services,
+        faq: Array.isArray(text.faq) && text.faq.length ? text.faq : draft.faq,
+        // Oznake menjamo samo na praznim pločicama, da ne preimenujemo tuđe slike.
+        gallery: draft.gallery.map((item, index) => (!item.imageUrl && labels[index] ? { ...item, label: labels[index] } : item)),
+      };
+
+      setSiteAiStep('images');
+      const imageRes = await fetch('/api/ai/images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessName: next.businessName,
+          businessType: next.businessType || presetName(next.templateId),
+          categoryId: next.categoryId,
+          labels: next.gallery.map((item) => item.label),
+        }),
+      });
+      const plan = (await imageRes.json()) as SiteImagePlan & { error?: string };
+
+      if (imageRes.ok) {
+        next = withImagePlan(next, plan);
+        setSiteAiNotice('Sajt je popunjen — tekstovi i slike su spremni. Pregledajte i objavite.');
+      } else if (imageRes.status === 503) {
+        setSiteAiNotice('Tekstovi su popunjeni. Automatske fotografije još nisu povezane — dodajte ih ručno.');
+      } else {
+        setSiteAiNotice(plan.error || 'Tekstovi su popunjeni, ali slike nisu dodate. Pokušajte ponovo.');
+      }
+
+      setDraft(next);
+    } catch {
+      setSiteAiNotice('AI trenutno nije dostupan. Pokušajte ponovo.');
+    } finally {
+      setSiteAiBusy(false);
+      setSiteAiStep('text');
     }
   };
 
@@ -1460,12 +1791,7 @@ export default function SiteBuilder() {
 
     setCloudBusy(true);
     try {
-      // Objavljen sajt ne sme da ostane bez slika: ako ih korisnik nije dodao,
-      // popunjavamo hero i galeriju determinističkim AI slikama.
-      const ready = withAutoImages(draft);
-      if (ready !== draft) setDraft(ready);
-
-      const siteId = await saveToCloud(ready);
+      const siteId = await saveToCloud(draft);
       if (!siteId) return;
 
       const client = getSupabaseClient();
@@ -1480,17 +1806,27 @@ export default function SiteBuilder() {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ siteId }),
       });
-      const data = (await res.json()) as { slug?: string; error?: string };
+      const data = (await res.json()) as {
+        slug?: string;
+        draft?: Partial<SiteDraft>;
+        imagesAdded?: number;
+        error?: string;
+      };
 
       if (!res.ok || !data.slug) {
         setNotice(data.error || 'Sajt nije moguće objaviti.');
         return;
       }
 
+      // Fotografije dodaje server pri objavi (ključ provajdera ne ide u
+      // pregledač) — preuzimamo gotov nacrt da uređivač vidi isto što i sajt.
+      const ready = data.draft ? normalizeDraft(data.draft) : null;
+      if (ready) setDraft(ready);
+
       setPublishedSlug(data.slug);
-      setNotice(ready !== draft
-        ? `Sajt je objavljen na /s/${data.slug}. Dodali smo fotografije — možete ih zameniti u uređivaču.`
-        : `Sajt je objavljen na /s/${data.slug}.`);
+      setNotice(data.imagesAdded
+        ? `Sajt je objavljen na ${siteUrl(data.slug)}. Dodali smo fotografije — možete ih zameniti u uređivaču.`
+        : `Sajt je objavljen na ${siteUrl(data.slug)}.`);
     } catch {
       setNotice('Objava nije uspela. Pokušajte ponovo.');
     } finally {
@@ -1545,6 +1881,9 @@ export default function SiteBuilder() {
     setCloudSiteId(site.id);
     setPublishedSlug(site.status === 'published' ? site.slug : null);
     setBookingMessage('');
+    setDomainInfo(null);
+    setDomainInput('');
+    setDomainNotice('');
     setNotice(`Učitali smo „${site.name}“ sa naloga.`);
     setScreen('editor');
   };
@@ -1553,6 +1892,9 @@ export default function SiteBuilder() {
     await signOut();
     setCloudSiteId(null);
     setPublishedSlug(null);
+    setDomainInfo(null);
+    setDomainInput('');
+    setDomainNotice('');
     setScreen('home');
     setNotice('Odjavljeni ste.');
   };
@@ -1720,13 +2062,13 @@ export default function SiteBuilder() {
             )}
             {screen === 'editor' && publishedSlug && (
               <>
-                <a href={`/s/${publishedSlug}`} target="_blank" rel="noreferrer" className="hidden rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 sm:inline-flex">
+                <a href={siteUrl(publishedSlug)} target="_blank" rel="noreferrer" className="hidden rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 sm:inline-flex">
                   Otvori sajt ↗
                 </a>
                 <button
                   type="button"
                   onClick={async () => {
-                    const url = `${window.location.origin}/s/${publishedSlug}`;
+                    const url = siteUrl(publishedSlug);
                     try {
                       await navigator.clipboard.writeText(url);
                       setNotice('Link sajta je kopiran.');
@@ -1932,7 +2274,7 @@ export default function SiteBuilder() {
                     {draft.logoUrl && <button type="button" onClick={() => updateDraft('logoUrl', undefined)} className="text-[10px] font-bold text-rose-600 hover:underline">Ukloni</button>}
                   </div>
                 </div>
-                <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Demo adresa</p><p className="mt-1 text-sm font-semibold text-indigo-700">{draft.slug}.div.ai</p></div>
+                <div className="rounded-xl bg-slate-50 px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Adresa sajta</p><p className="mt-1 break-all text-sm font-semibold text-indigo-700">{siteUrl(draft.slug).replace(/^https?:\/\//, '')}</p></div>
               </EditorCard>
 
               <EditorCard title="Dizajn sajta" subtitle="Isti tekst, potpuno drugačiji izgled.">
@@ -1959,29 +2301,183 @@ export default function SiteBuilder() {
                 <p className="text-[10px] leading-4 text-slate-400">Dizajn menja raspored i tipografiju, ali ne dira tekstove, usluge ni termine.</p>
               </EditorCard>
 
-              <EditorCard title="AI asistent" subtitle="Popunite tekstove na osnovu naziva i delatnosti.">
+              <EditorCard title="Fotografije" subtitle="Naslovna i galerija — vaše slike ili AI predlog.">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+                      {draft.heroImageUrl
+                        ? <img src={draft.heroImageUrl} alt="Naslovna fotografija" className="h-full w-full object-cover" />
+                        : <span className="px-2 text-center text-[9px] font-semibold leading-3 text-slate-400">Bez naslovne</span>}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-700">Naslovna fotografija</p>
+                      <p className="mt-0.5 text-[10px] leading-4 text-slate-500">Preporuka 1600 × 900 px, do 4 MB.</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <label className={`cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-700 transition hover:bg-slate-50 ${photoBusy ? 'pointer-events-none opacity-60' : ''}`}>
+                          {photoBusy === 'hero' ? 'Šaljem…' : draft.heroImageUrl ? 'Zameni' : 'Dodaj'}
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            className="hidden"
+                            disabled={photoBusy !== null}
+                            onChange={(event) => { void uploadPhoto(event.target.files?.[0], 'hero'); event.target.value = ''; }}
+                          />
+                        </label>
+                        {draft.heroImageUrl && (
+                          <button type="button" onClick={() => removePhoto('hero')} disabled={photoBusy !== null} className="text-[10px] font-bold text-rose-600 hover:underline disabled:opacity-60">Ukloni</button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {draft.gallery.map((item, index) => (
+                    <div key={index} className="rounded-xl border border-slate-200 bg-white p-2.5">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 text-[10px] font-bold text-slate-400">
+                          {item.imageUrl
+                            ? <img src={item.imageUrl} alt={item.label || `Fotografija ${index + 1}`} className="h-full w-full object-cover" />
+                            : index + 1}
+                        </div>
+                        <label className="block min-w-0 flex-1 text-[10px] font-bold text-slate-600">
+                          Oznaka fotografije
+                          <input
+                            value={item.label}
+                            maxLength={24}
+                            onChange={(event) => updateGalleryLabel(index, event.target.value)}
+                            className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white"
+                          />
+                        </label>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <label className={`cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-700 transition hover:bg-slate-50 ${photoBusy ? 'pointer-events-none opacity-60' : ''}`}>
+                          {photoBusy === `gallery-${index}` ? 'Šaljem…' : item.imageUrl ? 'Zameni' : 'Dodaj fotografiju'}
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            className="hidden"
+                            disabled={photoBusy !== null}
+                            onChange={(event) => { void uploadPhoto(event.target.files?.[0], index); event.target.value = ''; }}
+                          />
+                        </label>
+                        {item.imageUrl && (
+                          <button type="button" onClick={() => removePhoto(index)} disabled={photoBusy !== null} className="text-[10px] font-bold text-rose-600 hover:underline disabled:opacity-60">Ukloni</button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-[10px] leading-4 text-slate-400">Fotografije se čuvaju uz vaš nalog. AI popunjava samo prazna mesta i ne dira vaše slike.</p>
+                {photoNotice && (
+                  <p role="status" className="rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold leading-5 text-slate-600">{photoNotice}</p>
+                )}
+              </EditorCard>
+
+              <EditorCard title="Sopstveni domen" subtitle="Svoj domen možete povezati odmah ili kasnije. Besplatna adresa ostaje kao rezerva.">
+                <div className="rounded-xl bg-slate-50 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{sitesDomainReady ? 'Besplatna adresa' : 'Adresa sajta'}</p>
+                  <p className="mt-1 break-all text-sm font-semibold text-indigo-700">{siteUrl(draft.slug).replace(/^https?:\/\//, '')}</p>
+                  {!sitesDomainReady && (
+                    <p className="mt-1 text-[10px] leading-4 text-slate-400">Besplatan poddomen se uključuje kada platforma poveže svoj domen; do tada sajt radi na ovoj adresi.</p>
+                  )}
+                </div>
+
+                {!cloudSiteId ? (
+                  <p className="text-[11px] leading-5 text-slate-500">Sačuvajte sajt na nalog da biste povezali sopstveni domen.</p>
+                ) : domainInfo ? (
+                  <div className="rounded-xl border border-slate-200 bg-white p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="break-all text-sm font-bold text-slate-800">{domainInfo.domain}</p>
+                      <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${domainInfo.verified && !domainInfo.misconfigured ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {domainInfo.verified && !domainInfo.misconfigured ? 'Aktivan' : 'Čeka DNS'}
+                      </span>
+                    </div>
+                    {!(domainInfo.verified && !domainInfo.misconfigured) && (
+                      <div className="mt-2 space-y-1 text-[10px] leading-4 text-slate-500">
+                        <p>Kod registrara podesite:</p>
+                        <p><span className="font-bold text-slate-700">CNAME</span> <code className="break-all rounded bg-slate-100 px-1">{domainInfo.cname}</code></p>
+                        <p><span className="font-bold text-slate-700">A (za koren)</span> <code className="rounded bg-slate-100 px-1">{domainInfo.aRecords[0]}</code></p>
+                        <p>Provera obično traje od nekoliko minuta do par sati.</p>
+                      </div>
+                    )}
+                    <div className="mt-2 flex flex-wrap items-center gap-3">
+                      <button type="button" onClick={() => void refreshDomain()} disabled={domainBusy} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60">
+                        {domainBusy ? 'Proveravam…' : 'Proveri'}
+                      </button>
+                      <button type="button" onClick={() => void disconnectDomain()} disabled={domainBusy} className="text-[10px] font-bold text-rose-600 hover:underline disabled:opacity-60">
+                        Ukloni domen
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600">
+                      Vaš domen
+                      <input
+                        value={domainInput}
+                        onChange={(event) => setDomainInput(event.target.value)}
+                        placeholder="vasbiznis.rs"
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-medium text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => void connectDomain()}
+                      disabled={domainBusy || !domainInput.trim()}
+                      className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-2.5 text-xs font-extrabold text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {domainBusy ? 'Povezujem…' : 'Poveži domen'}
+                    </button>
+                  </div>
+                )}
+
+                {domainNotice && (
+                  <p role="status" className="rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold leading-5 text-slate-600">{domainNotice}</p>
+                )}
+                <p className="text-[10px] leading-4 text-slate-400">Domen proradi kada objavite sajt. Besplatna adresa ostaje kao rezerva, a domen možete ukloniti u svakom trenutku.</p>
+              </EditorCard>
+
+              <EditorCard title="AI asistent" subtitle="Popunite ceo sajt jednim klikom.">
                 <p className="text-[11px] leading-5 text-slate-500">
-                  AI predlaže kratku poruku, opis, tri usluge i česta pitanja. Postojeći tekstovi biće zamenjeni, a posle sve možete izmeniti.
+                  AI piše naslov, opis, tri usluge, česta pitanja i oznake galerije, pa dodaje slike tamo gde ih još nema. Sve posle možete izmeniti.
                 </p>
                 <button
                   type="button"
-                  onClick={() => void runAiAssistant()}
-                  disabled={aiBusy}
+                  onClick={() => void runSiteAi()}
+                  disabled={siteAiBusy || aiBusy || imageBusy}
                   className="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-extrabold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {aiBusy ? 'AI piše…' : 'Popuni tekstove pomoću AI'}
+                  {siteAiBusy ? (siteAiStep === 'images' ? 'Dodajem slike…' : 'Pišem tekstove…') : 'Popuni ceo sajt AI-jem'}
                 </button>
+                <p className="mt-1.5 text-center text-[10px] text-slate-400">Tekstovi + slike · gotovo za nekoliko sekundi</p>
+                {siteAiNotice && (
+                  <p role="status" className="mt-2 rounded-xl bg-indigo-50 px-3 py-2 text-[11px] font-semibold leading-5 text-indigo-800">{siteAiNotice}</p>
+                )}
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void runAiAssistant()}
+                    disabled={siteAiBusy || aiBusy}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {aiBusy ? 'Pišem…' : 'Samo tekstovi'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void generateImages()}
+                    disabled={siteAiBusy || imageBusy}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {imageBusy ? 'Pravim…' : 'Samo slike'}
+                  </button>
+                </div>
                 {aiNotice && (
                   <p role="status" className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold leading-5 text-slate-600">{aiNotice}</p>
                 )}
-                <button
-                  type="button"
-                  onClick={() => void generateImages()}
-                  disabled={imageBusy}
-                  className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-2.5 text-xs font-extrabold text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {imageBusy ? 'Pravim slike…' : 'Dodaj AI slike'}
-                </button>
                 {imageNotice && (
                   <p role="status" className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold leading-5 text-slate-600">{imageNotice}</p>
                 )}

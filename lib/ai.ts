@@ -14,6 +14,7 @@ export type AiSiteContent = {
   description: string;
   services: AiService[];
   faq: AiFaq[];
+  galleryLabels: string[];
   seoTitle: string;
   seoDescription: string;
 };
@@ -90,6 +91,15 @@ function normalize(raw: unknown, input: AiInput): AiSiteContent | null {
 
   if (!tagline || !description) return null;
 
+  const galleryFallback = ['Naš rad', 'Prostor', 'Detalji'];
+  const galleryLabels = Array.isArray(value.galleryLabels)
+    ? value.galleryLabels
+        .map((label) => text(label, 24))
+        .filter(Boolean)
+        .slice(0, 3)
+    : [];
+  while (galleryLabels.length < 3) galleryLabels.push(galleryFallback[galleryLabels.length]);
+
   while (services.length < 3) services.push(fallbackServices(input.businessType)[services.length]);
   while (faq.length < 3) faq.push(fallbackFaq(input.businessName)[faq.length]);
 
@@ -98,6 +108,7 @@ function normalize(raw: unknown, input: AiInput): AiSiteContent | null {
     description,
     services,
     faq,
+    galleryLabels,
     seoTitle: text(value.seoTitle, 70) || `${input.businessName} — ${input.businessType || 'usluge'}`,
     seoDescription: text(value.seoDescription, 170) || description.slice(0, 155),
   };
@@ -131,10 +142,11 @@ const RESPONSE_SCHEMA = {
         required: ['question', 'answer'],
       },
     },
+    galleryLabels: { type: 'ARRAY', items: { type: 'STRING' } },
     seoTitle: { type: 'STRING' },
     seoDescription: { type: 'STRING' },
   },
-  required: ['tagline', 'description', 'services', 'faq', 'seoTitle', 'seoDescription'],
+  required: ['tagline', 'description', 'services', 'faq', 'galleryLabels', 'seoTitle', 'seoDescription'],
 };
 
 function buildPrompt(input: AiInput): string {
@@ -154,6 +166,7 @@ function buildPrompt(input: AiInput): string {
     '- description: 2-3 rečenice, najviše 300 znakova',
     '- services: tačno 3 usluge koje su realne za tu delatnost, cena u formatu "od 1.500 RSD" ili "po dogovoru"',
     '- faq: tačno 3 pitanja sa kratkim odgovorima',
+    '- galleryLabels: tačno 3 kratke oznake fotografija (1-2 reči), vezane za delatnost (npr. "Frizure", "Ambijent", "Detalji")',
     '- seoTitle: najviše 60 znakova',
     '- seoDescription: najviše 155 znakova',
     '- ne izmišljaj adresu, telefon, email ni imena zaposlenih',

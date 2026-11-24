@@ -2,12 +2,15 @@ import type { Metadata, Viewport } from 'next';
 import { cache } from 'react';
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
+import { headers } from 'next/headers';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { isServerSupabaseConfigured } from '@/lib/api-auth';
 import { shortBusinessName } from '@/lib/published-brand';
 import PublicSite from '@/components/public-site';
 import type { Availability, Booking, LayoutId, SiteDraft } from '@/components/blocks/site-types';
 import { LAYOUT_IDS } from '@/components/blocks/site-types';
+import { isBrokenImageUrl } from '@/lib/image-urls';
+import { siteBaseForHost, siteUrlForHost } from '@/lib/site-url';
 
 const BLOCK_IDS = ['hero', 'about', 'services', 'gallery', 'reviews', 'faq', 'hours', 'booking', 'map', 'contact'] as const;
 const DEFAULT_BLOCKS: SiteDraft['visibleBlocks'] = ['hero', 'about', 'services', 'gallery', 'reviews', 'faq', 'hours', 'booking', 'contact'];
@@ -72,7 +75,7 @@ function sanitizeDraft(raw: unknown): SiteDraft | null {
     businessName,
     businessType: text(data.businessType) || undefined,
     logoUrl: text(data.logoUrl) || undefined,
-    heroImageUrl: text(data.heroImageUrl) || undefined,
+    heroImageUrl: isBrokenImageUrl(text(data.heroImageUrl)) ? undefined : text(data.heroImageUrl) || undefined,
     slug: text(data.slug),
     tagline: text(data.tagline),
     description: text(data.description),
@@ -106,7 +109,11 @@ function sanitizeDraft(raw: unknown): SiteDraft | null {
       .map((item) => ({ question: text(item.question), answer: text(item.answer) }))
       .filter((item) => item.question && item.answer),
     gallery: records(data.gallery)
-      .map((item) => ({ label: text(item.label), emoji: text(item.emoji, '📸'), imageUrl: text(item.imageUrl) || undefined }))
+      .map((item) => ({
+        label: text(item.label),
+        emoji: text(item.emoji, '📸'),
+        imageUrl: isBrokenImageUrl(text(item.imageUrl)) ? undefined : text(item.imageUrl) || undefined,
+      }))
       .filter((item) => item.label),
     visibleBlocks: Array.isArray(data.visibleBlocks)
       ? (data.visibleBlocks.filter((block): block is SiteDraft['visibleBlocks'][number] =>
@@ -177,7 +184,8 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 
   const title = draft.businessType ? `${draft.businessName} — ${draft.businessType}` : draft.businessName;
   const description = draft.description || draft.tagline || `${draft.businessName} — kontakt i zakazivanje.`;
-  const base = `/s/${site.slug}`;
+  const base = siteBaseForHost(site.slug, (await headers()).get('host'));
+  const canonical = siteUrlForHost(site.slug, (await headers()).get('host'));
 
   return {
     title: { absolute: title },
@@ -198,14 +206,14 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
       apple: [{ url: `${base}/icons/apple-180`, sizes: '180x180', type: 'image/png' }],
       shortcut: [`${base}/icons/192`],
     },
-    alternates: { canonical: base },
+    alternates: { canonical },
     openGraph: {
       title,
       description: description.slice(0, 300),
       type: 'website',
       locale: 'sr_RS',
       siteName: draft.businessName,
-      url: base,
+      url: canonical,
     },
     twitter: {
       card: 'summary_large_image',
@@ -235,6 +243,7 @@ export default async function PublishedSitePage({ params }: PageParams) {
   if (!draft) notFound();
 
   const bookings = await loadBookings(site.id);
+  const host = (await headers()).get('host');
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -244,7 +253,7 @@ export default async function PublishedSitePage({ params }: PageParams) {
     telephone: draft.phone || undefined,
     email: draft.email || undefined,
     address: draft.address ? { '@type': 'PostalAddress', streetAddress: draft.address } : undefined,
-    url: `/s/${site.slug}`,
+    url: siteUrlForHost(site.slug, host),
   };
 
   return (

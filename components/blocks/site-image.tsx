@@ -4,7 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { SiteIcon, type SiteIconName } from './site-icons';
 import { accentOnDark } from './site-types';
 
-// Slika koja ume da padne. Pollinations ponekad vrati grešku ili presporo
+// Slika koja ume da padne. Spoljni CDN ponekad vrati grešku ili presporo
 // odgovori — tada prikazujemo isti elegantni placeholder umesto slomljene
 // ikonice pregledača.
 export function SiteImage({ src, alt, className, fallback }: {

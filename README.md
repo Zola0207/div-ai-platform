@@ -56,7 +56,7 @@ Skripta je idempotentna i dopunjava i starije baze (npr. `leads` tabelu iz prve 
 
 ### AI asistent
 
-Editor ima dugme „Popuni tekstove pomoću AI“ koje iz naziva biznisa i delatnosti predlaže slogan, opis, tri usluge i FAQ.
+U uređivaču je glavno dugme **„Popuni ceo sajt AI-jem“**: jedan klik popunjava slogan, opis, tri usluge, FAQ, oznake galerije i dodaje fotografije tamo gde ih još nema. Postoje i dve precizne opcije — „Samo tekstovi“ i „Samo slike“.
 
 1. Napravite besplatan ključ na https://aistudio.google.com/apikey
 2. Upišite ga u `GEMINI_API_KEY` (samo server, nikad `NEXT_PUBLIC_`).
@@ -64,7 +64,15 @@ Editor ima dugme „Popuni tekstove pomoću AI“ koje iz naziva biznisa i delat
 
 Ruta je `app/api/ai/suggest/route.ts`, logika u `lib/ai.ts`. Ako ključ nije postavljen, dugme vraća jasnu poruku i sajt normalno radi dalje. AI popunjava samo tekstove — nikada ne generiše HTML/CSS, pa dizajn ostaje stabilan.
 
-**AI slike** idu preko `app/api/ai/images/route.ts`. Generisani tekst preko Gemini-ja je besplatan, ali generisanje slika na Gemini-ju traži plaćen plan, zato slike trenutno pravi Pollinations (besplatno, bez ključa) i čuva se samo URL u nacrtu. Ako kasnije pređete na plaćeni model ili na stock fotografije (Pexels/Unsplash), menja se samo ta ruta.
+**Fotografije** dolaze iz Pexels API-ja preko `app/api/ai/images/route.ts`, logika je u `lib/site-images.ts`.
+
+1. Napravite besplatan ključ na https://www.pexels.com/api/
+2. Upišite ga u `PEXELS_API_KEY` (samo server — ključ nikad ne stiže u pregledač).
+3. Bez ključa sajtovi koriste brendirane pločice, a uređivač kaže da fotografije nisu povezane.
+
+Popunjavaju se samo prazne pozicije: ručno izabrane i uploadovane slike ostaju netaknute. Ista provera radi i pri objavi na serveru (`app/api/sites/publish/route.ts`), pa objavljen sajt ne može da ostane sa pokvarenom adresom slike.
+
+**Sopstvene fotografije:** u uređivaču, kartica „Fotografije“ prima naslovnu i do tri galerijske slike (JPG/PNG/WebP, do 4 MB). Fajlovi idu na Supabase Storage preko `app/api/uploads/route.ts`, u javni bucket `site-images` koji se pravi automatski pri prvom uploadu; u nacrtu se čuva samo javni URL. Zamena i uklanjanje brišu i stari fajl, i to samo ako pripada prijavljenom korisniku. Bez prijave upload nije dozvoljen.
 
 **Logo:** u uređivaču možete dodati svoj logo (PNG/JPG/WebP/SVG, automatski se smanjuje na 256 px). Ako ga nema, sajt prikazuje inicijale u boji brenda — bez ijednog spoljnog zahteva.
 
@@ -174,6 +182,29 @@ Izmene idu kroz `app/api/leads/[id]/route.ts` (PATCH) i dozvoljene su samo vlasn
 - Adresa mora biti jedinstvena na celoj platformi — čuva je indeks `sites_slug_key`, a `app/api/sites/publish/route.ts` rešava sudare dodavanjem sufiksa (`-2`, `-3`…).
 - Upiti poslati sa javne strane vezuju se za sajt preko `site_id` (samo ako je sajt objavljen).
 
+### Besplatna adresa je poddomen našeg domena
+
+Svaki objavljen sajt dobija besplatnu adresu `<slug>.<naš domen>` (npr. `studio-lena.div.ai`). To je uvek poddomen našeg domena — nikad tuđi domen ni eksterni poddomen.
+
+1. U Vercel projektu dodajte `div.ai` i `*.div.ai` (Settings → Domains).
+2. Kod registrara podesite `A` zapis za `div.ai` na `76.76.21.21` i `CNAME` za `*` na `cname.vercel-dns.com` (ili prebacite DNS na Vercel).
+3. U Vercel env dodajte `NEXT_PUBLIC_SITES_DOMAIN=div.ai` i redeploy.
+4. `proxy.ts` prepoznaje `<slug>.div.ai`, preslikava ga na `/s/<slug>` i time uključuje i `/manifest.webmanifest`, ikonice, `/robots.txt` i `/sitemap.xml`. Stara putanja `/s/<slug>` ostaje da radi, ali kanonska adresa je poddomen.
+
+Bez `NEXT_PUBLIC_SITES_DOMAIN` platforma radi kao ranije (`/s/<slug>`), pa ništa ne puca dok se domen ne poveže.
+
+### Sopstveni domen kupca (opciono)
+
+Kupac može da poveže svoj domen (npr. `vasbiznis.rs`) odmah ili kasnije; besplatna adresa ostaje kao rezerva.
+
+- Kartica **„Sopstveni domen“** u uređivaču: unos domena, status („Aktivan“ / „Čeka DNS“), DNS uputstvo i uklanjanje.
+- API: `app/api/domains/route.ts` (GET status, POST povezivanje, DELETE uklanjanje), logika u `lib/domains.ts`.
+- Domen se dodaje u Vercel preko `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID` i `VERCEL_TEAM_ID` (samo server). Status i preporučeni DNS zapisi čitaju se iz Vercel API-ja, pa se ne hardkoduju.
+- `proxy.ts` traži host u `sites.custom_domain` (kratak keš od 60 s) i preslikava ga na `/s/<slug>`. Kanonski link, OG url, JSON-LD, manifest, robots i sitemap tada koriste sopstveni domen.
+- Potrebna je migracija `supabase/migrations/2026-11-24-custom-domains.sql` (kolona `custom_domain` + jedinstveni indeks). Bez nje API vraća jasnu poruku da migracija treba da se pokrene.
+
+DNS kod registrara: `CNAME` za `www` (ili poddomen koji se koristi) na vrednost koju API vrati (obično `cname.vercel-dns.com`), a za koren `A` na preporučenu IPv4 adresu. Vercel automatski izdaje SSL kada se zapisi propagiraju.
+
 ## Instalacija kao aplikacija (PWA)
 
 Svaki objavljen sajt može da se doda na početni ekran telefona i tada se otvara bez adresne trake — sa svojom ikonicom, imenom i bojom, kao aplikacija.
@@ -181,7 +212,7 @@ Svaki objavljen sajt može da se doda na početni ekran telefona i tada se otvar
 - **Manifest po sajtu:** `app/s/[slug]/manifest.webmanifest/route.ts` vraća ime, kratko ime, opis, akcentnu boju i ikonice iz podataka sajta. Next.js `app/manifest.ts` važi samo za koren, pa sajtovi klijenata dobijaju sopstvenu rutu.
 - **Ikonice bez dizajnera:** `app/s/[slug]/icons/[variant]/route.tsx` generiše 192, 512, maskable 512 i Apple 180 px — inicijali na akcentnoj boji, sa automatski izabranim kontrastom teksta.
 - **Instalacija:** `components/site-app.tsx` registruje service worker i posle nekoliko sekundi nudi karticu „Instaliraj“. Na iOS-u, gde ne postoji `beforeinstallprompt`, prikazuje putanju *Podeli → Dodaj na početni ekran*. Kartica se ne prikazuje na desktopu, u već instaliranoj aplikaciji, ni posle odbijanja (pamti se po sajtu u `localStorage`).
-- **Offline:** `public/s/sw.js` (scope `/s/`) kešira posećene strane i statične fajlove; kad mreže nema, vraća poslednju verziju strane ili generičku `public/offline.html`. Service worker se nikad ne kešira dugo (`next.config.ts`), da ispravke stignu odmah.
+- **Offline:** `public/s/sw.js` (scope `/s/`) kešira posećene strane i statične fajlove; kad mreže nema, vraća poslednju verziju strane ili generičku `public/offline.html`. Na sopstvenom poddomenu koristi se `public/sw.js` sa scope-om `/`, pa ista funkcionalnost radi i na adresi `slug.<domen>`. Service worker se nikad ne kešira dugo (`next.config.ts`), da ispravke stignu odmah.
 - **Provera:** na telefonu otvoriti objavljen sajt, sačekati karticu i dodati na početni ekran; u DevTools → Application proveriti Manifest, Service Workers i režim „Offline“.
 
 ## Nalozi i naplata

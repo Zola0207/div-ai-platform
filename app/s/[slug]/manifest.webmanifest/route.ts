@@ -1,10 +1,11 @@
 import { loadPublishedBrand } from '@/lib/published-brand';
+import { siteBaseForHost } from '@/lib/site-url';
 
 // Manifest se generiše po sajtu (app/manifest.ts važi samo za koren),
 // pa koristimo route handler koji vraća pravi webmanifest.
 export const dynamic = 'force-dynamic';
 
-export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const brand = await loadPublishedBrand(slug);
 
@@ -15,16 +16,17 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     });
   }
 
-  const base = `/s/${brand.slug}`;
+  const base = siteBaseForHost(brand.slug, request.headers.get('host'));
+  const root = base || '/';
   const manifest = {
-    id: base,
+    id: root,
     name: brand.name,
     short_name: brand.shortName,
     description: brand.description,
     lang: 'sr-Latn',
     dir: 'ltr',
-    start_url: base,
-    scope: base,
+    start_url: root,
+    scope: root,
     display: 'standalone',
     background_color: '#ffffff',
     theme_color: brand.accent,
